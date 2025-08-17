@@ -1,24 +1,49 @@
 <link rel="stylesheet" href="assets/CSS/style.css">
 <script src="assets/JS/main.js"></script>
 
-<input id="cakeIdDash" placeholder="ID Gâteau (ex: CK_...)">
-<button id="btnLoad">Charger</button>
-<button id="btnExport">Export CSV</button>
+<!doctype html>
+<html lang="fr">
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Dashboard gâteaux</title>
+<link rel="stylesheet" href="assets/CSS/style.css">
+<body>
+  <h1>Dashboard</h1>
 
-<p>Moyenne globale: <span id="avgGlobal">-</span></p>
-<ul>
-  <li>Goût: <span id="avgTaste">-</span></li>
-  <li>Texture: <span id="avgTexture">-</span></li>
-  <li>Garniture: <span id="avgPairing">-</span></li>
-  <li>Visuel: <span id="avgVisuel">-</span></li>
-</ul>
+  <label for="cakeIdDash">ID Gâteau</label>
+  <input id="cakeIdDash" placeholder="Ex : CK_2025...">
+  <button id="btnLoad">Charger</button>
+  <button id="btnExport">Export CSV</button>
 
-<table border="1" cellpadding="6">
-  <thead>
-    <tr>
-      <th>Testeur</th><th>Goût</th><th>Texture</th><th>Garniture</th><th>Visuel</th><th>Globale</th><th>Observations</th><th>Commentaire</th><th>Date</th>
-    </tr>
-  </thead>
-  <tbody id="responsesTbody"></tbody>
-</table>
+  <h2>Statistiques</h2>
+  <p>Moyenne globale: <strong id="avgGlobal">-</strong></p>
+  <ul>
+    <li>Goût: <span id="avgTaste">-</span></li>
+    <li>Texture: <span id="avgTexture">-</span></li>
+    <li>Garniture: <span id="avgPairing">-</span></li>
+    <li>Visuel: <span id="avgVisuel">-</span></li>
+  </ul>
+
+  <h2>Réponses</h2>
+  <table border="1" cellpadding="6">
+    <thead>
+      <tr>
+        <th>Testeur</th>
+        <th>Goût</th>
+        <th>Texture</th>
+        <th>Garniture</th>
+        <th>Visuel</th>
+        <th>Globale</th>
+        <th>Observations</th>
+        <th>Commentaire</th>
+        <th>Date</th>
+      </tr>
+    </thead>
+    <tbody id="responsesTbody"></tbody>
+  </table>
+
+  <script src="assets/JS/main.js" defer></script>
+</body>
+</html>
+
 
