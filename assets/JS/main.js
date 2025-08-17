@@ -158,20 +158,32 @@ async function handleFeedbackSubmit(e) {
   }
   const taster = $("#taster") ? $("#taster").value.trim() : "";
 
-  // Notes (1..5)
+  // Lire / valider les notes (0..10, pas 0.5). Virgule et point acceptés.
   const ratings = {
-    taste: parseInt($("#taste").value, 10),
-    texture: parseInt($("#texture").value, 10),
-    pairing: parseInt($("#pairing").value, 10),
-    visuel: parseInt($("#visuel").value, 10),
-    overall: parseInt($("#overall").value, 10),
+    taste: parseNote10($("#taste").value),
+    texture: parseNote10($("#texture").value),
+    pairing: parseNote10($("#pairing").value),
+    visuel: parseNote10($("#visuel").value),
   };
 
-  // Flags
-  const flags = Array.from(
-    document.querySelectorAll('input[name="flag"]:checked')
-  ).map((el) => el.value);
+  if (Object.values(ratings).some((v) => !isFinite(v))) {
+    toast("Merci de saisir des notes valides (0 à 10, pas de 0,5).");
+    return;
+  }
 
+  // Calculer la globale automatiquement
+  const overall = computeOverall10(ratings);
+  if (!isFinite(overall)) {
+    toast("Impossible de calculer la note globale.");
+    return;
+  }
+  // Afficher dans le champ (lecture seule)
+  if ($("#overall")) $("#overall").value = String(overall);
+
+  // Flags + commentaire
+  const flags = Array.from(document.querySelectorAll('input[name="flag"]:checked')).map(
+    (el) => el.value
+  );
   const comments = $("#comments") ? $("#comments").value : "";
   const submittedAt = new Date().toISOString();
 
@@ -180,7 +192,7 @@ async function handleFeedbackSubmit(e) {
     const res = await postJSON(url, {
       cakeId,
       taster,
-      ratings,
+      ratings: { ...ratings, overall }, // on envoie la globale calculée
       flags,
       comments,
       submittedAt,
@@ -189,11 +201,53 @@ async function handleFeedbackSubmit(e) {
 
     toast("Merci ! Votre avis a été enregistré.");
     $("#formFeedback").reset();
+    if ($("#overall")) $("#overall").value = "";
   } catch (err) {
     console.error(err);
     toast("Erreur : envoi impossible.");
   }
 }
+
+// Recalcul dynamique quand une note change
+function wireLiveOverall() {
+  const fields = ["#taste", "#texture", "#pairing", "#visuel"];
+  const recalc = () => {
+    const ratings = {
+      taste: parseNote10($("#taste")?.value),
+      texture: parseNote10($("#texture")?.value),
+      pairing: parseNote10($("#pairing")?.value),
+      visuel: parseNote10($("#visuel")?.value),
+    };
+    const overall = computeOverall10(ratings);
+    if (isFinite(overall) && $("#overall")) $("#overall").value = String(overall);
+  };
+  fields.forEach((sel) => {
+    const el = $(sel);
+    if (el) ["input", "change", "blur"].forEach((ev) => el.addEventListener(ev, recalc));
+  });
+}
+
+document.addEventListener("DOMContentLoaded", () => {
+  // add-cake.html
+  if ($("#formAddCake")) {
+    $("#formAddCake").addEventListener("submit", handleAddCakeSubmit);
+  }
+  // feedback.html
+  if ($("#formFeedback")) {
+    if ($("#cakeId") && !$("#cakeId").value) {
+      const id = getCakeIdFromURL();
+      if (id) $("#cakeId").value = id;
+    }
+    wireLiveOverall(); // << calcule la globale en direct
+    $("#formFeedback").addEventListener("submit", handleFeedbackSubmit);
+  }
+  // dashboard.html
+  if ($("#cakeIdDash")) {
+    $("#btnLoad") && $("#btnLoad").addEventListener("click", loadDashboard);
+    $("#btnExport") && $("#btnExport").addEventListener("click", exportCSV);
+  }
+});
+
 
 /* === 4) DASHBOARD (dashboard.html) ===
    IDs requis :
