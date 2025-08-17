@@ -288,7 +288,6 @@ function buildCharts(items) {
 // Construit l'URL vers feedback.html pour un cakeId, robuste sur GitHub Pages
 function buildFeedbackUrl(cakeId) {
   const u = new URL(location.href);
-  // enlève le nom de fichier actuel et met feedback.html
   const basePath = u.pathname.replace(/[^/]*$/, "");
   u.pathname = basePath + "feedback.html";
   u.search = "?" + toQuery({ cakeId });
@@ -305,13 +304,14 @@ async function showShareBox(cakeId) {
   a.textContent = link;
   box.style.display = "block";
 
-  // QR si la lib est présente
+  // (debug visuel)
+  console.log("Lien public généré:", link);
+
   if (window.QRCode && $("#qrDash")) {
     $("#qrDash").innerHTML = "";
     new QRCode($("#qrDash"), { text: link, width: 160, height: 160 });
   }
 
-  // Copier
   $("#btnCopyLink")?.addEventListener("click", async () => {
     try {
       await navigator.clipboard.writeText(link);
@@ -321,12 +321,12 @@ async function showShareBox(cakeId) {
     }
   });
 
-  // WhatsApp
   $("#btnWhatsApp")?.addEventListener("click", () => {
     const txt = encodeURIComponent("Donne ton avis sur ce gâteau : " + link);
     window.open(`https://wa.me/?text=${txt}`, "_blank", "noopener");
   });
 }
+
 
 async function fetchCakes({ q = "", status = "all" } = {}) {
   const url = `${CONFIG.API_URL}?action=listCakes&status=${encodeURIComponent(status)}&q=${encodeURIComponent(q)}`;
@@ -344,11 +344,14 @@ function populateCakeSelect(items) {
   items.forEach((it) => {
     const opt = document.createElement("option");
     const dateTxt = it.dateRealisation ? ` (${it.dateRealisation})` : "";
-    opt.value = it.id;
-    opt.textContent = `${it.title}${dateTxt}`;
+    opt.value = it.id;                       // <-- la valeur est l'ID
+    opt.textContent = `${it.title}${dateTxt}`; // <-- le texte montre titre + date
     sel.appendChild(opt);
   });
+  // ne rien afficher si aucun gâteau choisi
+  if ($("#shareBox")) $("#shareBox").style.display = "none";
 }
+
 async function refreshCakeList() {
   const q = $("#searchCake")?.value?.trim() || "";
   const items = await fetchCakes({ q, status: "all" });
