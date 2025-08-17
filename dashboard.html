@@ -1,5 +1,3 @@
-<link rel="stylesheet" href="assets/CSS/style.css">
-<script src="assets/JS/main.js"></script>
 <!doctype html>
 <html lang="fr">
 <meta charset="utf-8">
@@ -9,48 +7,48 @@
 <body>
   <h1>Dashboard</h1>
 
-<div style="display:flex; gap:8px; flex-wrap:wrap; align-items:flex-end;">
-  <div>
-    <label for="cakeSelect">Gâteau</label><br>
-    <select id="cakeSelect" style="min-width:260px">
-      <option value="">— Sélectionner un gâteau —</option>
-    </select>
+  <div style="display:flex; gap:8px; flex-wrap:wrap; align-items:flex-end;">
+    <div>
+      <label for="cakeSelect">Gâteau</label><br>
+      <select id="cakeSelect" style="min-width:260px">
+        <option value="">— Sélectionner un gâteau —</option>
+      </select>
+    </div>
+
+    <div>
+      <label for="searchCake">Filtrer</label><br>
+      <input id="searchCake" placeholder="Rechercher par titre">
+    </div>
+
+    <div>
+      <label>&nbsp;</label><br>
+      <button id="btnRefreshCakes" type="button">Rafraîchir la liste</button>
+    </div>
+
+    <div>
+      <label>&nbsp;</label><br>
+      <button id="btnLoad" type="button">Charger</button>
+    </div>
+
+    <div>
+      <label>&nbsp;</label><br>
+      <button id="btnExport" type="button">Export CSV</button>
+    </div>
   </div>
 
-  <div>
-    <label for="searchCake">Filtrer</label><br>
-    <input id="searchCake" placeholder="Rechercher par titre">
-  </div>
-
-  <div>
-    <label>&nbsp;</label><br>
-    <button id="btnRefreshCakes" type="button">Rafraîchir la liste</button>
-  </div>
-
-  <div>
-    <label>&nbsp;</label><br>
-    <button id="btnLoad" type="button">Charger</button>
-  </div>
-
-  <div>
-    <label>&nbsp;</label><br>
-    <button id="btnExport" type="button">Export CSV</button>
-  </div>
-</div>
-
+  <!-- Bloc Lien public -->
   <div id="shareBox" style="display:none;margin-top:12px;background:#fff;padding:12px;border-radius:6px;box-shadow:0 2px 4px rgba(0,0,0,.05);">
-  <strong>Lien public :</strong>
-  <a id="publicLinkDash" href="#" target="_blank" rel="noopener"></a>
-  <div style="margin-top:8px; display:flex; gap:8px; flex-wrap:wrap;">
-    <button type="button" id="btnCopyLink">Copier le lien</button>
-    <button type="button" id="btnWhatsApp">Partager WhatsApp</button>
+    <strong>Lien public :</strong>
+    <a id="publicLinkDash" href="#" target="_blank" rel="noopener"></a>
+    <div style="margin-top:8px; display:flex; gap:8px; flex-wrap:wrap;">
+      <button type="button" id="btnCopyLink">Copier le lien</button>
+      <button type="button" id="btnWhatsApp">Partager WhatsApp</button>
+    </div>
+    <div id="qrDash" style="margin-top:8px;"></div>
+    <!-- Optionnel: si tu veux le QR
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
+    -->
   </div>
-  <div id="qrDash" style="margin-top:8px;"></div>
-  <!-- Optionnel: décommente pour un QR (sinon laisse vide)
-  <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
-  -->
-</div>
-
 
   <h2>Statistiques</h2>
   <p>Moyenne globale: <strong id="avgGlobal">-</strong></p>
@@ -104,4 +102,3 @@
   <script src="assets/JS/main.js" defer></script>
 </body>
 </html>
-
