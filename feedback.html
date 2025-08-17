@@ -1,20 +1,51 @@
 <link rel="stylesheet" href="assets/CSS/style.css">
 <script src="assets/JS/main.js"></script>
 
-<form id="formFeedback">
-  <input id="cakeId" type="hidden"> <!-- rempli via URL ?cakeId=... -->
-  <input id="taster" placeholder="Prénom (optionnel)">
-  <input id="taste" type="number" min="1" max="5" required placeholder="Note Goût /5">
-  <input id="texture" type="number" min="1" max="5" required placeholder="Note Texture /5">
-  <input id="pairing" type="number" min="1" max="5" required placeholder="Note Garniture /5">
-  <input id="visuel" type="number" min="1" max="5" required placeholder="Note Visuel /5">
-  <input id="overall" type="number" min="1" max="5" required placeholder="Note Globale /5">
+<!doctype html>
+<html lang="fr">
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Feedback gâteau</title>
+<link rel="stylesheet" href="assets/CSS/style.css">
+<body>
+  <form id="formFeedback">
+    <h1>Donner son avis</h1>
 
-  <!-- flags (exemples) -->
-  <label><input type="checkbox" name="flag" value="trop_sucre"> Trop sucré</label>
-  <label><input type="checkbox" name="flag" value="trop_sec"> Trop sec</label>
-  <label><input type="checkbox" name="flag" value="trop_dense"> Trop dense</label>
+    <!-- Rempli automatiquement via ?cakeId=... si vide -->
+    <input id="cakeId" type="hidden">
 
-  <textarea id="comments" placeholder="Commentaire (optionnel)"></textarea>
-  <button type="submit">Envoyer</button>
-</form>
+    <label for="taster">Prénom (optionnel)</label>
+    <input id="taster" placeholder="Ex : Marie">
+
+    <label for="taste">Goût (1–5)</label>
+    <input id="taste" type="number" min="1" max="5" required>
+
+    <label for="texture">Texture (1–5)</label>
+    <input id="texture" type="number" min="1" max="5" required>
+
+    <label for="pairing">Garniture (1–5)</label>
+    <input id="pairing" type="number" min="1" max="5" required>
+
+    <label for="visuel">Visuel (1–5)</label>
+    <input id="visuel" type="number" min="1" max="5" required>
+
+    <label for="overall">Globale (1–5)</label>
+    <input id="overall" type="number" min="1" max="5" required>
+
+    <fieldset>
+      <legend>Observations</legend>
+      <label><input type="checkbox" name="flag" value="trop_sucre"> Trop sucré</label>
+      <label><input type="checkbox" name="flag" value="trop_sec"> Trop sec</label>
+      <label><input type="checkbox" name="flag" value="trop_dense"> Trop dense</label>
+    </fieldset>
+
+    <label for="comments">Commentaire</label>
+    <textarea id="comments" placeholder="Optionnel"></textarea>
+
+    <button type="submit">Envoyer</button>
+  </form>
+
+  <script src="assets/JS/main.js" defer></script>
+</body>
+</html>
+
