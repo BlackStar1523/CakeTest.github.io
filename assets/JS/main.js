@@ -1,10 +1,10 @@
-/* ======= Cake Feedback – main.js (Phase 1 – MVP, SANS Cloudinary) ======= */
+/* ======= Cake Feedback – main.js (MVP) ======= */
 
 /* === 0) CONFIG === */
 const CONFIG = {
   API_URL:
     "https://script.google.com/macros/s/AKfycbw6qu6FrM57cTXG0OyRiuWN4iuQ7km98h6QxKTy5-3hlPE952y371FVMwWxUc168nWf/exec",
-  // URL de photo de test (temporaire, le temps de valider le flux)
+  // Photo temporaire, le temps de valider le flux (MVP sans upload)
   SAMPLE_PHOTO_URL:
     "https://res.cloudinary.com/dk0ioppgv/image/upload/v1755266890/cld-sample-4.jpg",
 };
@@ -17,54 +17,16 @@ function toQuery(params) {
   return usp.toString();
 }
 
-// Normalise "7,5" -> "7.5"
-function normalizeDecimal(str) {
-  return String(str).replace(',', '.');
-}
-
-// Arrondit à l'incrément 0.5
-function roundToHalf(n) {
-  return Math.round(n * 2) / 2;
-}
-
-// Parse une note saisie (0..10, pas de 0.5)
-function parseNote10(value) {
-  const n = parseFloat(normalizeDecimal(value));
-  if (!isFinite(n)) return NaN;
-  const clamped = Math.min(10, Math.max(0, n));
-  return roundToHalf(clamped);
-}
-
-// Calcule la globale (moyenne simple des 4 critères), arrondie au 0.5
-function computeOverall10({ taste, texture, pairing, visuel }) {
-  const vals = [taste, texture, pairing, visuel].filter((x) => isFinite(x));
-  if (vals.length !== 4) return NaN;
-  const avg = vals.reduce((a, b) => a + b, 0) / 4;
-  return roundToHalf(avg);
-}
-
-
-/*
+// POST en text/plain pour éviter le preflight CORS avec Apps Script
 async function postJSON(url, data) {
   const res = await fetch(url, {
     method: "POST",
-    headers: { "Content-Type": "application/json" }, // si souci CORS: mets "text/plain"
-    body: JSON.stringify(data),
-  });
-  return res.json();
-}*/
-
-async function postJSON(url, data) {
-  const res = await fetch(url, {
-    method: "POST",
-    headers: { "Content-Type": "text/plain;charset=utf-8" }, // <-- au lieu de application/json
+    headers: { "Content-Type": "text/plain;charset=utf-8" },
     body: JSON.stringify(data),
   });
   const json = await res.json().catch(() => ({}));
-  console.log("createCake response:", json);
   return json;
 }
-
 
 async function getJSON(url) {
   const res = await fetch(url);
@@ -72,55 +34,63 @@ async function getJSON(url) {
 }
 
 function toast(msg) {
-  alert(msg); // simple pour MVP
+  alert(msg);
 }
 
-/* === 2) CRÉATION GÂTEAU (add-cake.html) ===
-   IDs requis dans la page :
-   - #formAddCake
-   - #title (text)
-   - #dateReal (date)
-   - #publicLink (a)
-   - #qr (div/canvas) [si tu ajoutes qrcode.js, sinon ignorer]
+/* === 2) NOTES /10 AVEC DEMI-POINTS === */
+function normalizeDecimal(str) {
+  return String(str).replace(",", ".");
+}
+function roundToHalf(n) {
+  return Math.round(n * 2) / 2;
+}
+function parseNote10(value) {
+  const n = parseFloat(normalizeDecimal(value));
+  if (!isFinite(n)) return NaN;
+  const clamped = Math.min(10, Math.max(0, n));
+  return roundToHalf(clamped);
+}
+function computeOverall10({ taste, texture, pairing, visuel }) {
+  const vals = [taste, texture, pairing, visuel].filter((x) => isFinite(x));
+  if (vals.length !== 4) return NaN;
+  const avg = vals.reduce((a, b) => a + b, 0) / 4;
+  return roundToHalf(avg);
+}
+
+/* === 3) CRÉATION GÂTEAU (add-cake.html) ===
+   IDs requis :
+   - #formAddCake, #title, #dateReal
+   - #publicLink (affichage du lien)
+   - #qr (optionnel si lib qrcodejs)
 */
 async function handleAddCakeSubmit(e) {
   e.preventDefault();
   const title = $("#title").value.trim();
-  const dateReal = $("#dateReal").value; // YYYY-MM-DD
+  const dateReal = $("#dateReal").value;
   if (!title || !dateReal) {
     toast("Titre et date sont obligatoires.");
     return;
   }
-
   try {
-    // Pas d'upload d'image pour ce test : on envoie une URL de photo de test
-    const photoUrl = CONFIG.SAMPLE_PHOTO_URL;
-
-    // createCake → Apps Script
+    const photoUrl = CONFIG.SAMPLE_PHOTO_URL; // pas d'upload pour le MVP
     const url = `${CONFIG.API_URL}?action=createCake`;
-    const res = await postJSON(url, {
-      title,
-      photoUrl,
-      dateRealisation: dateReal,
-    });
+    const res = await postJSON(url, { title, photoUrl, dateRealisation: dateReal });
     if (!res.ok) throw new Error(res.error || "createCake a échoué");
 
-    // Construire lien de feedback à partager
+    // Construire l'URL publique vers feedback.html
     const feedbackUrl = new URL(location.origin + location.pathname);
     feedbackUrl.pathname =
       feedbackUrl.pathname.replace(/[^/]*$/, "") + "feedback.html";
     feedbackUrl.search = "?" + toQuery({ cakeId: res.cakeId, t: Date.now() });
 
-    // Afficher lien
     const a = $("#publicLink");
     if (a) {
       a.href = feedbackUrl.toString();
       a.textContent = feedbackUrl.toString();
       a.target = "_blank";
+      a.rel = "noopener";
     }
-
     toast("Gâteau créé. Lien prêt à partager !");
-    // QR (si tu inclus qrcodejs dans la page)
     if (window.QRCode && $("#qr")) {
       $("#qr").innerHTML = "";
       new QRCode($("#qr"), {
@@ -135,15 +105,7 @@ async function handleAddCakeSubmit(e) {
   }
 }
 
-/* === 3) FORMULAIRE TESTEUR (feedback.html) ===
-   IDs requis :
-   - #formFeedback
-   - #cakeId (hidden)  [ou récup via URL ?cakeId=...]
-   - #taster (text, optionnel)
-   - Notes: #taste, #texture, #pairing, #visuel, #overall  (inputs type=number 1..5)
-   - Cases (flags) avec name="flag" (plusieurs checkbox)
-   - #comments (textarea)
-*/
+/* === 4) FEEDBACK TESTEUR (feedback.html) === */
 function getCakeIdFromURL() {
   const u = new URL(location.href);
   return u.searchParams.get("cakeId") || "";
@@ -158,29 +120,24 @@ async function handleFeedbackSubmit(e) {
   }
   const taster = $("#taster") ? $("#taster").value.trim() : "";
 
-  // Lire / valider les notes (0..10, pas 0.5). Virgule et point acceptés.
   const ratings = {
     taste: parseNote10($("#taste").value),
     texture: parseNote10($("#texture").value),
     pairing: parseNote10($("#pairing").value),
     visuel: parseNote10($("#visuel").value),
   };
-
   if (Object.values(ratings).some((v) => !isFinite(v))) {
     toast("Merci de saisir des notes valides (0 à 10, pas de 0,5).");
     return;
   }
 
-  // Calculer la globale automatiquement
   const overall = computeOverall10(ratings);
   if (!isFinite(overall)) {
     toast("Impossible de calculer la note globale.");
     return;
   }
-  // Afficher dans le champ (lecture seule)
   if ($("#overall")) $("#overall").value = String(overall);
 
-  // Flags + commentaire
   const flags = Array.from(document.querySelectorAll('input[name="flag"]:checked')).map(
     (el) => el.value
   );
@@ -192,7 +149,7 @@ async function handleFeedbackSubmit(e) {
     const res = await postJSON(url, {
       cakeId,
       taster,
-      ratings: { ...ratings, overall }, // on envoie la globale calculée
+      ratings: { ...ratings, overall },
       flags,
       comments,
       submittedAt,
@@ -208,7 +165,7 @@ async function handleFeedbackSubmit(e) {
   }
 }
 
-// Recalcul dynamique quand une note change
+// calcul live de la globale
 function wireLiveOverall() {
   const fields = ["#taste", "#texture", "#pairing", "#visuel"];
   const recalc = () => {
@@ -227,82 +184,21 @@ function wireLiveOverall() {
   });
 }
 
-document.addEventListener("DOMContentLoaded", () => {
-  // add-cake.html
-  if ($("#formAddCake")) {
-    $("#formAddCake").addEventListener("submit", handleAddCakeSubmit);
-  }
-  // feedback.html
-  if ($("#formFeedback")) {
-    if ($("#cakeId") && !$("#cakeId").value) {
-      const id = getCakeIdFromURL();
-      if (id) $("#cakeId").value = id;
-    }
-    wireLiveOverall(); // << calcule la globale en direct
-    $("#formFeedback").addEventListener("submit", handleFeedbackSubmit);
-  }
-  // dashboard.html
-  if ($("#cakeIdDash")) {
-    $("#btnLoad") && $("#btnLoad").addEventListener("click", loadDashboard);
-    $("#btnExport") && $("#btnExport").addEventListener("click", exportCSV);
-  }
-});
-
-
-/* === 4) DASHBOARD (dashboard.html) ===
-   IDs requis :
-   - #cakeIdDash (input texte du cakeId ou select)
-   - #btnLoad (bouton charger)
-   - #avgGlobal, #avgTaste, #avgTexture, #avgPairing, #avgVisuel  (spans)
-   - #responsesTbody (tbody du tableau)
-   - #btnExport (bouton export CSV)
-*/
-async function fetchCakes({ q = "", status = "all" } = {}) {
-  const url = `${CONFIG.API_URL}?action=listCakes&status=${encodeURIComponent(status)}&q=${encodeURIComponent(q)}`;
-  const { ok, items, error } = await getJSON(url);
-  if (!ok) {
-    toast("Erreur chargement des gâteaux : " + (error || "inconnue"));
-    return [];
-  }
-  return items || [];
-}
-
-function populateCakeSelect(items) {
-  const sel = $("#cakeSelect");
-  if (!sel) return;
-  sel.innerHTML = `<option value="">— Sélectionner un gâteau —</option>`;
-  items.forEach((it) => {
-    const opt = document.createElement("option");
-    const dateTxt = it.dateRealisation ? ` (${it.dateRealisation})` : "";
-    opt.value = it.id;
-    opt.textContent = `${it.title}${dateTxt}`;
-    sel.appendChild(opt);
-  });
-}
-
-async function refreshCakeList() {
-  const q = $("#searchCake")?.value?.trim() || "";
-  const items = await fetchCakes({ q, status: "all" }); // tu peux mettre "ouvert" si tu veux filtrer
-  populateCakeSelect(items);
-}
-
-
+/* === 5) TABLE & MOYENNES (dashboard) === */
 function moyenne(nums) {
   const arr = nums.filter((n) => Number.isFinite(n));
   if (!arr.length) return 0;
   return Math.round((arr.reduce((a, b) => a + b, 0) / arr.length) * 100) / 100;
 }
-
 function setText(id, value) {
   const el = $(id);
   if (el) el.textContent = String(value);
 }
-
 function renderResponsesTable(items) {
   const tb = $("#responsesTbody");
   if (!tb) return;
   tb.innerHTML = "";
-  for (const it of items) {
+  for (const it of (items || [])) {
     const tr = document.createElement("tr");
     tr.innerHTML = `
       <td>${it.taster || ""}</td>
@@ -319,21 +215,17 @@ function renderResponsesTable(items) {
   }
 }
 
-// Conserver les instances pour pouvoir les détruire au rechargement
+/* === 6) CHARTS (dashboard) === */
 let charts = { avg: null, hist: null, flags: null };
-
 function destroyCharts() {
   Object.values(charts).forEach((ch) => { if (ch && ch.destroy) ch.destroy(); });
   charts = { avg: null, hist: null, flags: null };
 }
-
 function buildCharts(items) {
   if (!items || !items.length || !window.Chart) {
     destroyCharts();
     return;
   }
-
-  // 1) Averages chart
   const t = (k) => items.map((it) => Number(it.ratings[k]) || 0);
   const avgTaste = moyenne(t("taste"));
   const avgTexture = moyenne(t("texture"));
@@ -341,87 +233,100 @@ function buildCharts(items) {
   const avgVisuel = moyenne(t("visuel"));
   const avgOverall = moyenne(t("overall"));
 
-  const ctxAvg = document.getElementById("chartAverages").getContext("2d");
-  if (charts.avg) charts.avg.destroy();
-  charts.avg = new Chart(ctxAvg, {
-    type: "bar",
-    data: {
-      labels: ["Goût", "Texture", "Garniture", "Visuel", "Globale"],
-      datasets: [{
-        label: "Moyenne /10",
-        data: [avgTaste, avgTexture, avgPairing, avgVisuel, avgOverall]
-      }]
-    },
-    options: {
-      responsive: true,
-      scales: { y: { beginAtZero: true, max: 10 } }
-    }
-  });
+  // Moyennes
+  const ctxAvg = document.getElementById("chartAverages")?.getContext("2d");
+  if (ctxAvg) {
+    if (charts.avg) charts.avg.destroy();
+    charts.avg = new Chart(ctxAvg, {
+      type: "bar",
+      data: {
+        labels: ["Goût", "Texture", "Garniture", "Visuel", "Globale"],
+        datasets: [{ label: "Moyenne /10", data: [avgTaste, avgTexture, avgPairing, avgVisuel, avgOverall] }]
+      },
+      options: { responsive: true, scales: { y: { beginAtZero: true, max: 10 } } }
+    });
+  }
 
-  // 2) Histogram of overall (bins 0, 0.5, 1, ..., 10)
+  // Histogramme des globales (bins de 0.5)
   const overalls = t("overall");
-  const edges = Array.from({ length: 21 }, (_, i) => i * 0.5); // 0..10 step 0.5
+  const edges = Array.from({ length: 21 }, (_, i) => i * 0.5); // 0..10
   const counts = edges.map(() => 0);
   overalls.forEach((v) => {
     if (!Number.isFinite(v)) return;
-    const idx = Math.round(v * 2); // 0..20
+    const idx = Math.round(v * 2);
     counts[idx] = (counts[idx] || 0) + 1;
   });
   const labelsHist = edges.map((e) => e.toFixed(1));
-
-  const ctxHist = document.getElementById("chartHistogram").getContext("2d");
-  if (charts.hist) charts.hist.destroy();
-  charts.hist = new Chart(ctxHist, {
-    type: "bar",
-    data: { labels: labelsHist, datasets: [{ label: "Nombre de réponses", data: counts }] },
-    options: {
-      responsive: true,
-      plugins: { legend: { display: false } },
-      scales: { y: { beginAtZero: true, ticks: { precision: 0 } } }
-    }
-  });
-
-  // 3) Flags frequencies
-  const flagCounts = {};
-  items.forEach((it) => {
-    (it.flags || []).forEach((f) => {
-      if (!f) return;
-      flagCounts[f] = (flagCounts[f] || 0) + 1;
+  const ctxHist = document.getElementById("chartHistogram")?.getContext("2d");
+  if (ctxHist) {
+    if (charts.hist) charts.hist.destroy();
+    charts.hist = new Chart(ctxHist, {
+      type: "bar",
+      data: { labels: labelsHist, datasets: [{ label: "Nombre de réponses", data: counts }] },
+      options: { responsive: true, plugins: { legend: { display: false } }, scales: { y: { beginAtZero: true, ticks: { precision: 0 } } } }
     });
-  });
+  }
+
+  // Flags
+  const flagCounts = {};
+  items.forEach((it) => (it.flags || []).forEach((f) => { if (f) flagCounts[f] = (flagCounts[f] || 0) + 1; }));
   const flagLabels = Object.keys(flagCounts);
   const flagValues = flagLabels.map((k) => flagCounts[k]);
-
-  const ctxFlags = document.getElementById("chartFlags").getContext("2d");
-  if (charts.flags) charts.flags.destroy();
-  charts.flags = new Chart(ctxFlags, {
-    type: "bar",
-    data: { labels: flagLabels, datasets: [{ label: "Occurences", data: flagValues }] },
-    options: {
-      responsive: true,
-      plugins: { legend: { display: false } },
-      scales: { y: { beginAtZero: true, ticks: { precision: 0 } } }
-    }
-  });
+  const ctxFlags = document.getElementById("chartFlags")?.getContext("2d");
+  if (ctxFlags) {
+    if (charts.flags) charts.flags.destroy();
+    charts.flags = new Chart(ctxFlags, {
+      type: "bar",
+      data: { labels: flagLabels, datasets: [{ label: "Occurences", data: flagValues }] },
+      options: { responsive: true, plugins: { legend: { display: false } }, scales: { y: { beginAtZero: true, ticks: { precision: 0 } } } }
+    });
+  }
 }
 
+/* === 7) LISTE DES GÂTEAUX (dashboard) === */
+async function fetchCakes({ q = "", status = "all" } = {}) {
+  const url = `${CONFIG.API_URL}?action=listCakes&status=${encodeURIComponent(status)}&q=${encodeURIComponent(q)}`;
+  const { ok, items, error } = await getJSON(url);
+  if (!ok) {
+    toast("Erreur chargement des gâteaux : " + (error || "inconnue"));
+    return [];
+  }
+  return items || [];
+}
+function populateCakeSelect(items) {
+  const sel = $("#cakeSelect");
+  if (!sel) return;
+  sel.innerHTML = `<option value="">— Sélectionner un gâteau —</option>`;
+  items.forEach((it) => {
+    const opt = document.createElement("option");
+    const dateTxt = it.dateRealisation ? ` (${it.dateRealisation})` : "";
+    opt.value = it.id;
+    opt.textContent = `${it.title}${dateTxt}`;
+    sel.appendChild(opt);
+  });
+}
+async function refreshCakeList() {
+  const q = $("#searchCake")?.value?.trim() || "";
+  const items = await fetchCakes({ q, status: "all" });
+  populateCakeSelect(items);
+}
 
+/* === 8) CHARGEMENT DASHBOARD === */
 async function loadDashboard() {
-  const cakeId = $("#cakeIdDash").value.trim();
+  const cakeId =
+    $("#cakeSelect")?.value?.trim() ||
+    $("#cakeIdDash")?.value?.trim() || ""; // compat ancien champ
   if (!cakeId) {
-    toast("Saisis un ID Gâteau.");
+    toast("Choisis un gâteau dans la liste.");
     return;
   }
-  const url = `${CONFIG.API_URL}?action=listResponses&cakeId=${encodeURIComponent(
-    cakeId
-  )}`;
+  const url = `${CONFIG.API_URL}?action=listResponses&cakeId=${encodeURIComponent(cakeId)}`;
   const { ok, items, error } = await getJSON(url);
   if (!ok) {
     toast("Erreur chargement : " + (error || "inconnue"));
     return;
   }
   renderResponsesTable(items || []);
-
   const t = (k) => (items || []).map((it) => Number(it.ratings[k]) || 0);
   const avgTaste = moyenne(t("taste"));
   const avgTexture = moyenne(t("texture"));
@@ -433,30 +338,25 @@ async function loadDashboard() {
   setText("#avgTexture", avgTexture);
   setText("#avgPairing", avgPairing);
   setText("#avgVisuel", avgVisuel);
-  setText(
-    "#avgGlobal",
-    moyenne([avgTaste, avgTexture, avgPairing, avgVisuel, avgOverall])
+  setText("#avgGlobal", moyenne([avgTaste, avgTexture, avgPairing, avgVisuel, avgOverall]));
 
-  // >>> NOUVEAU : construire les graphiques
   destroyCharts();
   buildCharts(items);
-
-  );
 }
 
 function exportCSV() {
-  const cakeId = $("#cakeIdDash").value.trim();
+  const cakeId =
+    $("#cakeSelect")?.value?.trim() ||
+    $("#cakeIdDash")?.value?.trim() || "";
   if (!cakeId) {
-    toast("Saisis un ID Gâteau.");
+    toast("Choisis un gâteau d’abord.");
     return;
   }
-  const url = `${CONFIG.API_URL}?action=exportCsv&cakeId=${encodeURIComponent(
-    cakeId
-  )}`;
+  const url = `${CONFIG.API_URL}?action=exportCsv&cakeId=${encodeURIComponent(cakeId)}`;
   window.location.href = url;
 }
 
-/* === 5) BOOTSTRAP PAR PAGE === */
+/* === 9) BOOTSTRAP PAR PAGE === */
 document.addEventListener("DOMContentLoaded", () => {
   // add-cake.html
   if ($("#formAddCake")) {
@@ -469,14 +369,24 @@ document.addEventListener("DOMContentLoaded", () => {
       const id = getCakeIdFromURL();
       if (id) $("#cakeId").value = id;
     }
+    wireLiveOverall(); // calcule la globale en direct
     $("#formFeedback").addEventListener("submit", handleFeedbackSubmit);
   }
 
-  // dashboard.html
-  if ($("#cakeIdDash")) {
-    $("#btnLoad") && $("#btnLoad").addEventListener("click", loadDashboard);
-    $("#btnExport") && $("#btnExport").addEventListener("click", exportCSV);
+  // dashboard.html (nouvelle UI avec select)
+  if ($("#cakeSelect")) {
+    refreshCakeList(); // charge la liste au démarrage
+    // filtre avec petit debounce
+    $("#searchCake")?.addEventListener("input", () => {
+      clearTimeout(window.__cakeSearchT);
+      window.__cakeSearchT = setTimeout(refreshCakeList, 250);
+    });
+    $("#btnRefreshCakes")?.addEventListener("click", refreshCakeList);
+    $("#btnLoad")?.addEventListener("click", loadDashboard);
+    $("#btnExport")?.addEventListener("click", exportCSV);
+  } else if ($("#cakeIdDash")) {
+    // compat ancien champ manuel
+    $("#btnLoad")?.addEventListener("click", loadDashboard);
+    $("#btnExport")?.addEventListener("click", exportCSV);
   }
 });
-
-
