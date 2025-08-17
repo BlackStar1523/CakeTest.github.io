@@ -1,2 +1,24 @@
 <link rel="stylesheet" href="assets/CSS/style.css">
 <script src="assets/JS/main.js"></script>
+
+<input id="cakeIdDash" placeholder="ID Gâteau (ex: CK_...)">
+<button id="btnLoad">Charger</button>
+<button id="btnExport">Export CSV</button>
+
+<p>Moyenne globale: <span id="avgGlobal">-</span></p>
+<ul>
+  <li>Goût: <span id="avgTaste">-</span></li>
+  <li>Texture: <span id="avgTexture">-</span></li>
+  <li>Garniture: <span id="avgPairing">-</span></li>
+  <li>Visuel: <span id="avgVisuel">-</span></li>
+</ul>
+
+<table border="1" cellpadding="6">
+  <thead>
+    <tr>
+      <th>Testeur</th><th>Goût</th><th>Texture</th><th>Garniture</th><th>Visuel</th><th>Globale</th><th>Observations</th><th>Commentaire</th><th>Date</th>
+    </tr>
+  </thead>
+  <tbody id="responsesTbody"></tbody>
+</table>
+
