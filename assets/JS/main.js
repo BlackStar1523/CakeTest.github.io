@@ -257,6 +257,36 @@ document.addEventListener("DOMContentLoaded", () => {
    - #responsesTbody (tbody du tableau)
    - #btnExport (bouton export CSV)
 */
+async function fetchCakes({ q = "", status = "all" } = {}) {
+  const url = `${CONFIG.API_URL}?action=listCakes&status=${encodeURIComponent(status)}&q=${encodeURIComponent(q)}`;
+  const { ok, items, error } = await getJSON(url);
+  if (!ok) {
+    toast("Erreur chargement des gâteaux : " + (error || "inconnue"));
+    return [];
+  }
+  return items || [];
+}
+
+function populateCakeSelect(items) {
+  const sel = $("#cakeSelect");
+  if (!sel) return;
+  sel.innerHTML = `<option value="">— Sélectionner un gâteau —</option>`;
+  items.forEach((it) => {
+    const opt = document.createElement("option");
+    const dateTxt = it.dateRealisation ? ` (${it.dateRealisation})` : "";
+    opt.value = it.id;
+    opt.textContent = `${it.title}${dateTxt}`;
+    sel.appendChild(opt);
+  });
+}
+
+async function refreshCakeList() {
+  const q = $("#searchCake")?.value?.trim() || "";
+  const items = await fetchCakes({ q, status: "all" }); // tu peux mettre "ouvert" si tu veux filtrer
+  populateCakeSelect(items);
+}
+
+
 function moyenne(nums) {
   const arr = nums.filter((n) => Number.isFinite(n));
   if (!arr.length) return 0;
