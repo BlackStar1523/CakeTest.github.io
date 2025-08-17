@@ -9,8 +9,6 @@
 <body>
   <h1>Dashboard</h1>
 
-  <h1>Dashboard</h1>
-
 <div style="display:flex; gap:8px; flex-wrap:wrap; align-items:flex-end;">
   <div>
     <label for="cakeSelect">Gâteau</label><br>
@@ -39,7 +37,20 @@
     <button id="btnExport" type="button">Export CSV</button>
   </div>
 </div>
-  
+
+  <div id="shareBox" style="display:none;margin-top:12px;background:#fff;padding:12px;border-radius:6px;box-shadow:0 2px 4px rgba(0,0,0,.05);">
+  <strong>Lien public :</strong>
+  <a id="publicLinkDash" href="#" target="_blank" rel="noopener"></a>
+  <div style="margin-top:8px; display:flex; gap:8px; flex-wrap:wrap;">
+    <button type="button" id="btnCopyLink">Copier le lien</button>
+    <button type="button" id="btnWhatsApp">Partager WhatsApp</button>
+  </div>
+  <div id="qrDash" style="margin-top:8px;"></div>
+  <!-- Optionnel: décommente pour un QR (sinon laisse vide)
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
+  -->
+</div>
+
 
   <h2>Statistiques</h2>
   <p>Moyenne globale: <strong id="avgGlobal">-</strong></p>
