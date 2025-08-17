@@ -1,16 +1,31 @@
 <link rel="stylesheet" href="assets/CSS/style.css">
 <script src="assets/JS/main.js"></script>
 
-<form id="formAddCake">
-  <input id="title" placeholder="Titre du gâteau" required>
-  <input id="dateReal" type="date" required>
-  <input id="photo" type="file" accept="image/*" required>
-  <img id="preview" alt="" style="max-width:160px;display:block;margin-top:8px;">
-  <button type="submit">Créer le gâteau</button>
-</form>
+<!doctype html>
+<html lang="fr">
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Ajouter un gâteau</title>
+<link rel="stylesheet" href="assets/CSS/style.css">
+<body>
+  <form id="formAddCake">
+    <h1>Créer un gâteau</h1>
 
-<p>Lien public : <a id="publicLink" href="#" target="_blank"></a></p>
-<div id="qr"></div>
-<!-- (Optionnel) ajoute <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script> pour générer le QR -->
+    <label for="title">Titre</label>
+    <input id="title" required placeholder="Ex : Fraisier V1">
 
+    <label for="dateReal">Date de réalisation</label>
+    <input id="dateReal" type="date" required>
 
+    <button type="submit">Créer</button>
+  </form>
+
+  <p>Lien public : <a id="publicLink" target="_blank" rel="noopener"></a></p>
+  <div id="qr"></div>
+  <!-- Optionnel : QR code 
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
+  -->
+
+  <script src="assets/JS/main.js" defer></script>
+</body>
+</html>
