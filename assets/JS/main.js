@@ -289,6 +289,93 @@ function renderResponsesTable(items) {
   }
 }
 
+// Conserver les instances pour pouvoir les détruire au rechargement
+let charts = { avg: null, hist: null, flags: null };
+
+function destroyCharts() {
+  Object.values(charts).forEach((ch) => { if (ch && ch.destroy) ch.destroy(); });
+  charts = { avg: null, hist: null, flags: null };
+}
+
+function buildCharts(items) {
+  if (!items || !items.length || !window.Chart) {
+    destroyCharts();
+    return;
+  }
+
+  // 1) Averages chart
+  const t = (k) => items.map((it) => Number(it.ratings[k]) || 0);
+  const avgTaste = moyenne(t("taste"));
+  const avgTexture = moyenne(t("texture"));
+  const avgPairing = moyenne(t("pairing"));
+  const avgVisuel = moyenne(t("visuel"));
+  const avgOverall = moyenne(t("overall"));
+
+  const ctxAvg = document.getElementById("chartAverages").getContext("2d");
+  if (charts.avg) charts.avg.destroy();
+  charts.avg = new Chart(ctxAvg, {
+    type: "bar",
+    data: {
+      labels: ["Goût", "Texture", "Garniture", "Visuel", "Globale"],
+      datasets: [{
+        label: "Moyenne /10",
+        data: [avgTaste, avgTexture, avgPairing, avgVisuel, avgOverall]
+      }]
+    },
+    options: {
+      responsive: true,
+      scales: { y: { beginAtZero: true, max: 10 } }
+    }
+  });
+
+  // 2) Histogram of overall (bins 0, 0.5, 1, ..., 10)
+  const overalls = t("overall");
+  const edges = Array.from({ length: 21 }, (_, i) => i * 0.5); // 0..10 step 0.5
+  const counts = edges.map(() => 0);
+  overalls.forEach((v) => {
+    if (!Number.isFinite(v)) return;
+    const idx = Math.round(v * 2); // 0..20
+    counts[idx] = (counts[idx] || 0) + 1;
+  });
+  const labelsHist = edges.map((e) => e.toFixed(1));
+
+  const ctxHist = document.getElementById("chartHistogram").getContext("2d");
+  if (charts.hist) charts.hist.destroy();
+  charts.hist = new Chart(ctxHist, {
+    type: "bar",
+    data: { labels: labelsHist, datasets: [{ label: "Nombre de réponses", data: counts }] },
+    options: {
+      responsive: true,
+      plugins: { legend: { display: false } },
+      scales: { y: { beginAtZero: true, ticks: { precision: 0 } } }
+    }
+  });
+
+  // 3) Flags frequencies
+  const flagCounts = {};
+  items.forEach((it) => {
+    (it.flags || []).forEach((f) => {
+      if (!f) return;
+      flagCounts[f] = (flagCounts[f] || 0) + 1;
+    });
+  });
+  const flagLabels = Object.keys(flagCounts);
+  const flagValues = flagLabels.map((k) => flagCounts[k]);
+
+  const ctxFlags = document.getElementById("chartFlags").getContext("2d");
+  if (charts.flags) charts.flags.destroy();
+  charts.flags = new Chart(ctxFlags, {
+    type: "bar",
+    data: { labels: flagLabels, datasets: [{ label: "Occurences", data: flagValues }] },
+    options: {
+      responsive: true,
+      plugins: { legend: { display: false } },
+      scales: { y: { beginAtZero: true, ticks: { precision: 0 } } }
+    }
+  });
+}
+
+
 async function loadDashboard() {
   const cakeId = $("#cakeIdDash").value.trim();
   if (!cakeId) {
@@ -319,6 +406,11 @@ async function loadDashboard() {
   setText(
     "#avgGlobal",
     moyenne([avgTaste, avgTexture, avgPairing, avgVisuel, avgOverall])
+
+  // >>> NOUVEAU : construire les graphiques
+  destroyCharts();
+  buildCharts(items);
+
   );
 }
 
