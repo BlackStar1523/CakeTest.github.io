@@ -284,6 +284,50 @@ function buildCharts(items) {
 }
 
 /* === 7) LISTE DES GÂTEAUX (dashboard) === */
+
+// Construit l'URL vers feedback.html pour un cakeId, robuste sur GitHub Pages
+function buildFeedbackUrl(cakeId) {
+  const u = new URL(location.href);
+  // enlève le nom de fichier actuel et met feedback.html
+  const basePath = u.pathname.replace(/[^/]*$/, "");
+  u.pathname = basePath + "feedback.html";
+  u.search = "?" + toQuery({ cakeId });
+  return u.toString();
+}
+
+async function showShareBox(cakeId) {
+  const box = $("#shareBox");
+  const a = $("#publicLinkDash");
+  if (!box || !a) return;
+
+  const link = buildFeedbackUrl(cakeId);
+  a.href = link;
+  a.textContent = link;
+  box.style.display = "block";
+
+  // QR si la lib est présente
+  if (window.QRCode && $("#qrDash")) {
+    $("#qrDash").innerHTML = "";
+    new QRCode($("#qrDash"), { text: link, width: 160, height: 160 });
+  }
+
+  // Copier
+  $("#btnCopyLink")?.addEventListener("click", async () => {
+    try {
+      await navigator.clipboard.writeText(link);
+      toast("Lien copié !");
+    } catch {
+      toast("Impossible de copier. Sélectionne et copie manuellement.");
+    }
+  });
+
+  // WhatsApp
+  $("#btnWhatsApp")?.addEventListener("click", () => {
+    const txt = encodeURIComponent("Donne ton avis sur ce gâteau : " + link);
+    window.open(`https://wa.me/?text=${txt}`, "_blank", "noopener");
+  });
+}
+
 async function fetchCakes({ q = "", status = "all" } = {}) {
   const url = `${CONFIG.API_URL}?action=listCakes&status=${encodeURIComponent(status)}&q=${encodeURIComponent(q)}`;
   const { ok, items, error } = await getJSON(url);
@@ -342,6 +386,9 @@ async function loadDashboard() {
 
   destroyCharts();
   buildCharts(items);
+
+  // >>> NOUVEAU : afficher le lien public + QR + partage
+  await showShareBox(cakeId);
 }
 
 function exportCSV() {
@@ -358,35 +405,52 @@ function exportCSV() {
 
 /* === 9) BOOTSTRAP PAR PAGE === */
 document.addEventListener("DOMContentLoaded", () => {
-  // add-cake.html
+  // === add-cake.html ===
   if ($("#formAddCake")) {
     $("#formAddCake").addEventListener("submit", handleAddCakeSubmit);
   }
 
-  // feedback.html
+  // === feedback.html ===
   if ($("#formFeedback")) {
     if ($("#cakeId") && !$("#cakeId").value) {
       const id = getCakeIdFromURL();
       if (id) $("#cakeId").value = id;
     }
-    wireLiveOverall(); // calcule la globale en direct
+    wireLiveOverall(); // calcule la note globale automatiquement
     $("#formFeedback").addEventListener("submit", handleFeedbackSubmit);
   }
 
-  // dashboard.html (nouvelle UI avec select)
+  // === dashboard.html ===
+  if ($("#cakeIdDash")) {
+    $("#btnLoad")?.addEventListener("click", loadDashboard);
+    $("#btnExport")?.addEventListener("click", exportCSV);
+  }
+
+  // === dashboard.html (nouvelle UI avec liste) ===
   if ($("#cakeSelect")) {
-    refreshCakeList(); // charge la liste au démarrage
-    // filtre avec petit debounce
+    // 1) Charger la liste au démarrage
+    refreshCakeList();
+
+    // 2) Filtre avec petit debounce
     $("#searchCake")?.addEventListener("input", () => {
       clearTimeout(window.__cakeSearchT);
       window.__cakeSearchT = setTimeout(refreshCakeList, 250);
     });
+
+    // 3) Boutons
     $("#btnRefreshCakes")?.addEventListener("click", refreshCakeList);
     $("#btnLoad")?.addEventListener("click", loadDashboard);
     $("#btnExport")?.addEventListener("click", exportCSV);
-  } else if ($("#cakeIdDash")) {
-    // compat ancien champ manuel
-    $("#btnLoad")?.addEventListener("click", loadDashboard);
-    $("#btnExport")?.addEventListener("click", exportCSV);
+
+    // 4) Changement de gâteau → afficher lien public
+    $("#cakeSelect")?.addEventListener("change", () => {
+      const id = $("#cakeSelect").value;
+      if (id) {
+        showShareBox(id);
+      } else if ($("#shareBox")) {
+        $("#shareBox").style.display = "none";
+      }
+    });
   }
 });
+
