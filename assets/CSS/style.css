@@ -1,1 +1,109 @@
+/* Style global */
+body {
+  font-family: Arial, sans-serif;
+  margin: 20px;
+  line-height: 1.5;
+  background: #f9f9f9;
+  color: #333;
+}
+
+/* Titres */
+h1, h2 {
+  color: #2c3e50;
+}
+
+/* Liens */
+a {
+  color: #0066cc;
+  text-decoration: none;
+}
+a:hover {
+  text-decoration: underline;
+}
+
+/* Navigation */
+nav ul {
+  list-style: none;
+  padding: 0;
+}
+nav li {
+  margin: 8px 0;
+}
+
+/* Formulaires */
+form {
+  background: #fff;
+  padding: 16px;
+  margin: 16px 0;
+  border-radius: 6px;
+  box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+}
+
+form label {
+  display: block;
+  margin-top: 12px;
+  font-weight: bold;
+}
+
+form input, form textarea, form button {
+  width: 100%;
+  padding: 8px;
+  margin-top: 4px;
+  border: 1px solid #ccc;
+  border-radius: 4px;
+  font-size: 14px;
+  box-sizing: border-box;
+}
+
+form textarea {
+  resize: vertical;
+  min-height: 80px;
+}
+
+form button {
+  background: #0066cc;
+  color: white;
+  border: none;
+  margin-top: 16px;
+  cursor: pointer;
+  font-weight: bold;
+}
+form button:hover {
+  background: #004999;
+}
+
+/* Fieldset (observations) */
+fieldset {
+  border: 1px solid #ccc;
+  padding: 10px;
+  margin-top: 12px;
+  border-radius: 4px;
+}
+legend {
+  font-weight: bold;
+}
+
+/* Table */
+table {
+  width: 100%;
+  border-collapse: collapse;
+  background: #fff;
+  margin-top: 16px;
+  box-shadow: 0 2px 4px rgba(0,0,0,0.05);
+}
+
+th, td {
+  border: 1px solid #ddd;
+  padding: 8px;
+  text-align: center;
+}
+
+th {
+  background: #f2f2f2;
+  font-weight: bold;
+}
+
+tbody tr:nth-child(even) {
+  background: #f9f9f9;
+}
 
