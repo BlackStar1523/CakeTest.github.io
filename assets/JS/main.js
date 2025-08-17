@@ -4,6 +4,7 @@
 const CONFIG = {
   API_URL:
     "https://script.google.com/macros/s/AKfycbw6qu6FrM57cTXG0OyRiuWN4iuQ7km98h6QxKTy5-3hlPE952y371FVMwWxUc168nWf/exec",
+  
   // Photo temporaire, le temps de valider le flux (MVP sans upload)
   SAMPLE_PHOTO_URL:
     "https://res.cloudinary.com/dk0ioppgv/image/upload/v1755266890/cld-sample-4.jpg",
@@ -11,6 +12,9 @@ const CONFIG = {
 
 /* === 1) HELPERS === */
 const $ = (sel, root = document) => root.querySelector(sel);
+const CLOUD_NAME = "dk0ioppgv";   // <- ton cloud name
+const UPLOAD_PRESET = "Cake Test"; // <- le preset que tu as créé
+
 
 function toQuery(params) {
   const usp = new URLSearchParams(params);
@@ -63,24 +67,73 @@ function computeOverall10({ taste, texture, pairing, visuel }) {
    - #publicLink (affichage du lien)
    - #qr (optionnel si lib qrcodejs)
 */
+
+function loadImageFile(file) {
+  return new Promise((resolve, reject) => {
+    const img = new Image();
+    img.onload = () => resolve(img);
+    img.onerror = reject;
+    img.src = URL.createObjectURL(file);
+  });
+}
+
+async function compressImage(file, maxSide = CONFIG.MAX_IMG) {
+  const img = await loadImageFile(file);
+  const ratio = Math.min(maxSide / img.width, maxSide / img.height, 1);
+  const w = Math.round(img.width * ratio);
+  const h = Math.round(img.height * ratio);
+
+  const canvas = document.createElement("canvas");
+  canvas.width = w; canvas.height = h;
+  const ctx = canvas.getContext("2d");
+  ctx.drawImage(img, 0, 0, w, h);
+
+  const blob = await new Promise((res) => canvas.toBlob(res, "image/jpeg", 0.85));
+  return new File([blob], file.name.replace(/\.[^.]+$/, ".jpg"), { type: "image/jpeg" });
+}
+
+async function uploadToCloudinary(file) {
+  const compressed = await compressImage(file, CONFIG.MAX_IMG);
+  const form = new FormData();
+  form.append("file", compressed);
+  form.append("upload_preset", CONFIG.CLOUDINARY_UPLOAD_PRESET);
+
+  const url = `https://api.cloudinary.com/v1_1/${CONFIG.CLOUDINARY_CLOUD_NAME}/image/upload`;
+  const res = await fetch(url, { method: "POST", body: form });
+  const data = await res.json();
+  if (!data.secure_url) {
+    console.error("Cloudinary error:", data);
+    throw new Error("Upload Cloudinary échoué");
+  }
+  return data.secure_url; // URL publique
+}
+
 async function handleAddCakeSubmit(e) {
   e.preventDefault();
   const title = $("#title").value.trim();
   const dateReal = $("#dateReal").value;
-  if (!title || !dateReal) {
-    toast("Titre et date sont obligatoires.");
+  const file = $("#photo")?.files?.[0];
+
+  if (!title || !dateReal || !file) {
+    toast("Titre, date et photo sont obligatoires.");
     return;
   }
+
   try {
-    const photoUrl = CONFIG.SAMPLE_PHOTO_URL; // pas d'upload pour le MVP
-    const url = `${CONFIG.API_URL}?action=createCake`;
-    const res = await postJSON(url, { title, photoUrl, dateRealisation: dateReal });
+    // 1) Upload Cloudinary → URL
+    const photoUrl = await uploadToCloudinary(file);
+
+    // 2) createCake → Apps Script
+    const res = await postJSON(`${CONFIG.API_URL}?action=createCake`, {
+      title,
+      photoUrl,
+      dateRealisation: dateReal,
+    });
     if (!res.ok) throw new Error(res.error || "createCake a échoué");
 
-    // Construire l'URL publique vers feedback.html
+    // 3) Lien public feedback
     const feedbackUrl = new URL(location.origin + location.pathname);
-    feedbackUrl.pathname =
-      feedbackUrl.pathname.replace(/[^/]*$/, "") + "feedback.html";
+    feedbackUrl.pathname = feedbackUrl.pathname.replace(/[^/]*$/, "") + "feedback.html";
     feedbackUrl.search = "?" + toQuery({ cakeId: res.cakeId, t: Date.now() });
 
     const a = $("#publicLink");
@@ -93,17 +146,32 @@ async function handleAddCakeSubmit(e) {
     toast("Gâteau créé. Lien prêt à partager !");
     if (window.QRCode && $("#qr")) {
       $("#qr").innerHTML = "";
-      new QRCode($("#qr"), {
-        text: feedbackUrl.toString(),
-        width: 160,
-        height: 160,
-      });
+      new QRCode($("#qr"), { text: feedbackUrl.toString(), width: 160, height: 160 });
     }
   } catch (err) {
     console.error(err);
     toast("Erreur lors de la création du gâteau.");
   }
 }
+
+async function loadCakeHeader() {
+  const cakeId = $("#cakeId")?.value || getCakeIdFromURL();
+  if (!cakeId) return;
+  try {
+    const { ok, ...data } = await getJSON(
+      `${CONFIG.API_URL}?action=getCake&cakeId=${encodeURIComponent(cakeId)}`
+    );
+    if (!ok) return;
+    $("#cakeTitle") && ($("#cakeTitle").textContent = data.title || "Gâteau");
+    if ($("#cakePhoto") && data.photoUrl) {
+      $("#cakePhoto").src = data.photoUrl;
+      $("#cakePhoto").style.display = "block";
+    }
+  } catch (e) {
+    console.warn("getCake failed", e);
+  }
+}
+
 
 /* === 4) FEEDBACK TESTEUR (feedback.html) === */
 function getCakeIdFromURL() {
@@ -411,6 +479,15 @@ document.addEventListener("DOMContentLoaded", () => {
   // === add-cake.html ===
   if ($("#formAddCake")) {
     $("#formAddCake").addEventListener("submit", handleAddCakeSubmit);
+
+    // aperçu photo avant upload
+    const input = $("#photo"), prev = $("#preview");
+    if (input && prev) {
+      input.addEventListener("change", () => {
+        const f = input.files?.[0];
+        if (f) prev.src = URL.createObjectURL(f);
+      });
+    }
   }
 
   // === feedback.html ===
@@ -419,41 +496,29 @@ document.addEventListener("DOMContentLoaded", () => {
       const id = getCakeIdFromURL();
       if (id) $("#cakeId").value = id;
     }
-    wireLiveOverall(); // calcule la note globale automatiquement
+
+    loadCakeHeader(); // <- affiche titre + photo
+    wireLiveOverall();
     $("#formFeedback").addEventListener("submit", handleFeedbackSubmit);
   }
 
   // === dashboard.html ===
-  if ($("#cakeIdDash")) {
-    $("#btnLoad")?.addEventListener("click", loadDashboard);
-    $("#btnExport")?.addEventListener("click", exportCSV);
-  }
+  if ($("#cakeIdDash") || $("#cakeSelect")) {
+    $("#btnLoad") && $("#btnLoad").addEventListener("click", loadDashboard);
+    $("#btnExport") && $("#btnExport").addEventListener("click", exportCSV);
 
-  // === dashboard.html (nouvelle UI avec liste) ===
-  if ($("#cakeSelect")) {
-    // 1) Charger la liste au démarrage
-    refreshCakeList();
-
-    // 2) Filtre avec petit debounce
-    $("#searchCake")?.addEventListener("input", () => {
-      clearTimeout(window.__cakeSearchT);
-      window.__cakeSearchT = setTimeout(refreshCakeList, 250);
-    });
-
-    // 3) Boutons
-    $("#btnRefreshCakes")?.addEventListener("click", refreshCakeList);
-    $("#btnLoad")?.addEventListener("click", loadDashboard);
-    $("#btnExport")?.addEventListener("click", exportCSV);
-
-    // 4) Changement de gâteau → afficher lien public
-    $("#cakeSelect")?.addEventListener("change", () => {
-      const id = $("#cakeSelect").value;
-      if (id) {
-        showShareBox(id);
-      } else if ($("#shareBox")) {
-        $("#shareBox").style.display = "none";
-      }
-    });
+    // si on a la liste des gâteaux avec recherche
+    if ($("#cakeSelect")) {
+      refreshCakeList();
+      $("#searchCake")?.addEventListener("input", () => {
+        clearTimeout(window.__cakeSearchT);
+        window.__cakeSearchT = setTimeout(refreshCakeList, 250);
+      });
+      $("#cakeSelect")?.addEventListener("change", () => {
+        const id = $("#cakeSelect").value;
+        if (id) showShareBox(id);
+      });
+    }
   }
 });
 
