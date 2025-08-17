@@ -17,6 +17,33 @@ function toQuery(params) {
   return usp.toString();
 }
 
+// Normalise "7,5" -> "7.5"
+function normalizeDecimal(str) {
+  return String(str).replace(',', '.');
+}
+
+// Arrondit à l'incrément 0.5
+function roundToHalf(n) {
+  return Math.round(n * 2) / 2;
+}
+
+// Parse une note saisie (0..10, pas de 0.5)
+function parseNote10(value) {
+  const n = parseFloat(normalizeDecimal(value));
+  if (!isFinite(n)) return NaN;
+  const clamped = Math.min(10, Math.max(0, n));
+  return roundToHalf(clamped);
+}
+
+// Calcule la globale (moyenne simple des 4 critères), arrondie au 0.5
+function computeOverall10({ taste, texture, pairing, visuel }) {
+  const vals = [taste, texture, pairing, visuel].filter((x) => isFinite(x));
+  if (vals.length !== 4) return NaN;
+  const avg = vals.reduce((a, b) => a + b, 0) / 4;
+  return roundToHalf(avg);
+}
+
+
 /*
 async function postJSON(url, data) {
   const res = await fetch(url, {
