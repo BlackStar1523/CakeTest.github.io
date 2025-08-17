@@ -1,6 +1,5 @@
 <link rel="stylesheet" href="assets/CSS/style.css">
 <script src="assets/JS/main.js"></script>
-
 <!doctype html>
 <html lang="fr">
 <meta charset="utf-8">
@@ -24,6 +23,26 @@
     <li>Visuel: <span id="avgVisuel">-</span></li>
   </ul>
 
+  <h2>Graphiques</h2>
+  <div style="background:#fff;padding:16px;border-radius:6px;box-shadow:0 2px 4px rgba(0,0,0,.05);">
+    <h3>Moyennes par critère (/10)</h3>
+    <canvas id="chartAverages" height="120"></canvas>
+  </div>
+
+  <div style="height:12px"></div>
+
+  <div style="background:#fff;padding:16px;border-radius:6px;box-shadow:0 2px 4px rgba(0,0,0,.05);">
+    <h3>Distribution des notes globales</h3>
+    <canvas id="chartHistogram" height="120"></canvas>
+  </div>
+
+  <div style="height:12px"></div>
+
+  <div style="background:#fff;padding:16px;border-radius:6px;box-shadow:0 2px 4px rgba(0,0,0,.05);">
+    <h3>Observations (flags)</h3>
+    <canvas id="chartFlags" height="120"></canvas>
+  </div>
+
   <h2>Réponses</h2>
   <table border="1" cellpadding="6">
     <thead>
@@ -42,8 +61,9 @@
     <tbody id="responsesTbody"></tbody>
   </table>
 
+  <!-- Chart.js -->
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
   <script src="assets/JS/main.js" defer></script>
 </body>
 </html>
-
 
