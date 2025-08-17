@@ -8,17 +8,19 @@
 <title>Ajouter un gâteau</title>
 <link rel="stylesheet" href="assets/CSS/style.css">
 <body>
-  <form id="formAddCake">
-    <h1>Créer un gâteau</h1>
+ <form id="formAddCake">
+  <h1>Créer un gâteau</h1>
+  <label>Titre <input id="title" required></label><br>
+  <label>Date de réalisation <input id="dateReal" type="date" required></label><br>
 
-    <label for="title">Titre</label>
-    <input id="title" required placeholder="Ex : Fraisier V1">
+  <!-- Photo: prise de vue mobile (camera arrière) OU fichier -->
+  <label>Photo
+    <input id="photo" type="file" accept="image/*" capture="environment" required>
+  </label><br>
+  <img id="preview" alt="" style="max-width:220px;display:block;margin:8px 0;">
 
-    <label for="dateReal">Date de réalisation</label>
-    <input id="dateReal" type="date" required>
-
-    <button type="submit">Créer</button>
-  </form>
+  <button type="submit">Créer</button>
+</form>
 
   <p>Lien public : <a id="publicLink" target="_blank" rel="noopener"></a></p>
   <div id="qr"></div>
