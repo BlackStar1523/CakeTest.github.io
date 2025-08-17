@@ -1,12 +1,12 @@
-/* ======= Cake Feedback – main.js (Phase 1 – MVP) ======= */
+/* ======= Cake Feedback – main.js (Phase 1 – MVP, SANS Cloudinary) ======= */
 
 /* === 0) CONFIG === */
 const CONFIG = {
   API_URL:
     "https://script.google.com/macros/s/AKfycbw6qu6FrM57cTXG0OyRiuWN4iuQ7km98h6QxKTy5-3hlPE952y371FVMwWxUc168nWf/exec",
-  CLOUDINARY_CLOUD_NAME: "dk0ioppgv",     // <-- remplace si besoin
-  CLOUDINARY_UPLOAD_PRESET: "unsigned",    // <-- crée un preset 'unsigned' dans Cloudinary
-  MAX_IMG: 1600,                           // redimension côté client (~px)
+  // URL de photo de test (temporaire, le temps de valider le flux)
+  SAMPLE_PHOTO_URL:
+    "https://res.cloudinary.com/dk0ioppgv/image/upload/v1755266890/cld-sample-4.jpg",
 };
 
 /* === 1) HELPERS === */
@@ -17,7 +17,6 @@ function toQuery(params) {
   return usp.toString();
 }
 
-// Pour éviter certains ennuis CORS d’Apps Script, on peut envoyer 'text/plain'
 async function postJSON(url, data) {
   const res = await fetch(url, {
     method: "POST",
@@ -33,82 +32,31 @@ async function getJSON(url) {
 }
 
 function toast(msg) {
-  alert(msg); // simple pour MVP (tu pourras remplacer par un beau toast)
+  alert(msg); // simple pour MVP
 }
 
-/* === 2) UPLOAD PHOTO (Cloudinary, compress + resize) === */
-function loadImageFile(file) {
-  return new Promise((resolve, reject) => {
-    const img = new Image();
-    img.onload = () => resolve(img);
-    img.onerror = reject;
-    img.src = URL.createObjectURL(file);
-  });
-}
-
-async function compressImage(file, maxSide = CONFIG.MAX_IMG) {
-  const img = await loadImageFile(file);
-  const ratio = Math.min(maxSide / img.width, maxSide / img.height, 1);
-  const w = Math.round(img.width * ratio);
-  const h = Math.round(img.height * ratio);
-
-  const canvas = document.createElement("canvas");
-  canvas.width = w;
-  canvas.height = h;
-  const ctx = canvas.getContext("2d");
-  ctx.drawImage(img, 0, 0, w, h);
-
-  // JPEG qualité 0.85 (équilibre)
-  const blob = await new Promise((resolve) =>
-    canvas.toBlob(resolve, "image/jpeg", 0.85)
-  );
-  return new File([blob], file.name.replace(/\.[^.]+$/, ".jpg"), {
-    type: "image/jpeg",
-  });
-}
-
-async function uploadToCloudinary(file) {
-  const compressed = await compressImage(file, CONFIG.MAX_IMG);
-  const form = new FormData();
-  form.append("file", compressed);
-  form.append("upload_preset", CONFIG.CLOUDINARY_UPLOAD_PRESET);
-
-  const url = `https://api.cloudinary.com/v1_1/${CONFIG.CLOUDINARY_CLOUD_NAME}/image/upload`;
-  const res = await fetch(url, { method: "POST", body: form });
-  const data = await res.json();
-
-  if (!data.secure_url) {
-    console.error("Cloudinary error:", data);
-    throw new Error("Upload Cloudinary échoué");
-  }
-  return data.secure_url;
-}
-
-/* === 3) CRÉATION GÂTEAU (add-cake.html) ===
+/* === 2) CRÉATION GÂTEAU (add-cake.html) ===
    IDs requis dans la page :
    - #formAddCake
    - #title (text)
    - #dateReal (date)
-   - #photo (file)
-   - #preview (img)  [optionnel]
    - #publicLink (a)
-   - #qr (canvas)    [si tu ajoutes qrcode.js, sinon ignorer]
+   - #qr (div/canvas) [si tu ajoutes qrcode.js, sinon ignorer]
 */
 async function handleAddCakeSubmit(e) {
   e.preventDefault();
   const title = $("#title").value.trim();
-  const dateReal = $("#dateReal").value; // format HTML date YYYY-MM-DD
-  const file = $("#photo").files[0];
-  if (!title || !dateReal || !file) {
-    toast("Titre, date et photo sont obligatoires.");
+  const dateReal = $("#dateReal").value; // YYYY-MM-DD
+  if (!title || !dateReal) {
+    toast("Titre et date sont obligatoires.");
     return;
   }
 
   try {
-    // 1) Upload photo → URL
-    const photoUrl = await uploadToCloudinary(file);
+    // Pas d'upload d'image pour ce test : on envoie une URL de photo de test
+    const photoUrl = CONFIG.SAMPLE_PHOTO_URL;
 
-    // 2) createCake → Apps Script
+    // createCake → Apps Script
     const url = `${CONFIG.API_URL}?action=createCake`;
     const res = await postJSON(url, {
       title,
@@ -117,11 +65,10 @@ async function handleAddCakeSubmit(e) {
     });
     if (!res.ok) throw new Error(res.error || "createCake a échoué");
 
-    // 3) Construire lien de feedback à partager
+    // Construire lien de feedback à partager
     const feedbackUrl = new URL(location.origin + location.pathname);
-    // si le site est dans un sous-chemin, on cible explicitement feedback.html à la racine du repo
-    // NOTE: sur GitHub Pages, remplace ci-dessous par ton chemin si besoin :
-    feedbackUrl.pathname = feedbackUrl.pathname.replace(/[^/]*$/, "") + "feedback.html";
+    feedbackUrl.pathname =
+      feedbackUrl.pathname.replace(/[^/]*$/, "") + "feedback.html";
     feedbackUrl.search = "?" + toQuery({ cakeId: res.cakeId, t: Date.now() });
 
     // Afficher lien
@@ -133,10 +80,14 @@ async function handleAddCakeSubmit(e) {
     }
 
     toast("Gâteau créé. Lien prêt à partager !");
-    // 4) QR (si tu inclus qrcodejs dans la page)
+    // QR (si tu inclus qrcodejs dans la page)
     if (window.QRCode && $("#qr")) {
       $("#qr").innerHTML = "";
-      new QRCode($("#qr"), { text: feedbackUrl.toString(), width: 160, height: 160 });
+      new QRCode($("#qr"), {
+        text: feedbackUrl.toString(),
+        width: 160,
+        height: 160,
+      });
     }
   } catch (err) {
     console.error(err);
@@ -144,7 +95,7 @@ async function handleAddCakeSubmit(e) {
   }
 }
 
-/* === 4) FORMULAIRE TESTEUR (feedback.html) ===
+/* === 3) FORMULAIRE TESTEUR (feedback.html) ===
    IDs requis :
    - #formFeedback
    - #cakeId (hidden)  [ou récup via URL ?cakeId=...]
@@ -177,9 +128,9 @@ async function handleFeedbackSubmit(e) {
   };
 
   // Flags
-  const flags = Array.from(document.querySelectorAll('input[name="flag"]:checked')).map(
-    (el) => el.value
-  );
+  const flags = Array.from(
+    document.querySelectorAll('input[name="flag"]:checked')
+  ).map((el) => el.value);
 
   const comments = $("#comments") ? $("#comments").value : "";
   const submittedAt = new Date().toISOString();
@@ -197,7 +148,6 @@ async function handleFeedbackSubmit(e) {
     if (!res.ok) throw new Error(res.error || "addResponse a échoué");
 
     toast("Merci ! Votre avis a été enregistré.");
-    // Option : réinitialiser le formulaire
     $("#formFeedback").reset();
   } catch (err) {
     console.error(err);
@@ -205,7 +155,7 @@ async function handleFeedbackSubmit(e) {
   }
 }
 
-/* === 5) DASHBOARD (dashboard.html) ===
+/* === 4) DASHBOARD (dashboard.html) ===
    IDs requis :
    - #cakeIdDash (input texte du cakeId ou select)
    - #btnLoad (bouton charger)
@@ -251,7 +201,9 @@ async function loadDashboard() {
     toast("Saisis un ID Gâteau.");
     return;
   }
-  const url = `${CONFIG.API_URL}?action=listResponses&cakeId=${encodeURIComponent(cakeId)}`;
+  const url = `${CONFIG.API_URL}?action=listResponses&cakeId=${encodeURIComponent(
+    cakeId
+  )}`;
   const { ok, items, error } = await getJSON(url);
   if (!ok) {
     toast("Erreur chargement : " + (error || "inconnue"));
@@ -270,7 +222,10 @@ async function loadDashboard() {
   setText("#avgTexture", avgTexture);
   setText("#avgPairing", avgPairing);
   setText("#avgVisuel", avgVisuel);
-  setText("#avgGlobal", moyenne([avgTaste, avgTexture, avgPairing, avgVisuel, avgOverall]));
+  setText(
+    "#avgGlobal",
+    moyenne([avgTaste, avgTexture, avgPairing, avgVisuel, avgOverall])
+  );
 }
 
 function exportCSV() {
@@ -279,30 +234,21 @@ function exportCSV() {
     toast("Saisis un ID Gâteau.");
     return;
   }
-  const url = `${CONFIG.API_URL}?action=exportCsv&cakeId=${encodeURIComponent(cakeId)}`;
-  // simple redirection pour télécharger
+  const url = `${CONFIG.API_URL}?action=exportCsv&cakeId=${encodeURIComponent(
+    cakeId
+  )}`;
   window.location.href = url;
 }
 
-/* === 6) BOOTSTRAP PAR PAGE === */
+/* === 5) BOOTSTRAP PAR PAGE === */
 document.addEventListener("DOMContentLoaded", () => {
   // add-cake.html
   if ($("#formAddCake")) {
     $("#formAddCake").addEventListener("submit", handleAddCakeSubmit);
-    // mini aperçu
-    const input = $("#photo");
-    const prev = $("#preview");
-    if (input && prev) {
-      input.addEventListener("change", () => {
-        const f = input.files[0];
-        if (f) prev.src = URL.createObjectURL(f);
-      });
-    }
   }
 
   // feedback.html
   if ($("#formFeedback")) {
-    // si cakeId caché absent, on remplit depuis l’URL
     if ($("#cakeId") && !$("#cakeId").value) {
       const id = getCakeIdFromURL();
       if (id) $("#cakeId").value = id;
@@ -316,4 +262,5 @@ document.addEventListener("DOMContentLoaded", () => {
     $("#btnExport") && $("#btnExport").addEventListener("click", exportCSV);
   }
 });
+
 
