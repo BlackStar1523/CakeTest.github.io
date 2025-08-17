@@ -17,6 +17,7 @@ function toQuery(params) {
   return usp.toString();
 }
 
+/*
 async function postJSON(url, data) {
   const res = await fetch(url, {
     method: "POST",
@@ -24,7 +25,19 @@ async function postJSON(url, data) {
     body: JSON.stringify(data),
   });
   return res.json();
+}*/
+
+async function postJSON(url, data) {
+  const res = await fetch(url, {
+    method: "POST",
+    headers: { "Content-Type": "text/plain;charset=utf-8" }, // <-- au lieu de application/json
+    body: JSON.stringify(data),
+  });
+  const json = await res.json().catch(() => ({}));
+  console.log("createCake response:", json);
+  return json;
 }
+
 
 async function getJSON(url) {
   const res = await fetch(url);
