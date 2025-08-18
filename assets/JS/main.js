@@ -9,6 +9,9 @@ const CONFIG = {
   SAMPLE_PHOTO_URL:
     "https://res.cloudinary.com/dk0ioppgv/image/upload/v1755266890/cld-sample-4.jpg",
 };
+const DEBUG = true;
+const log = (...args) => { if (DEBUG) console.log("[CakeDiag]", ...args); };
+const showDiag = (o) => { const el = document.getElementById("diag"); if (el) el.textContent += (typeof o==='string'?o:JSON.stringify(o,null,2)) + "\n"; };
 
 /* === 1) HELPERS === */
 const $ = (sel, root = document) => root.querySelector(sel);
@@ -23,18 +26,26 @@ function toQuery(params) {
 
 // POST en text/plain pour éviter le preflight CORS avec Apps Script
 async function postJSON(url, data) {
+  log("POST", url, data);
   const res = await fetch(url, {
     method: "POST",
     headers: { "Content-Type": "text/plain;charset=utf-8" },
     body: JSON.stringify(data),
   });
-  const json = await res.json().catch(() => ({}));
+  let json = null;
+  try { json = await res.json(); } catch { json = { ok:false, error:"Réponse non-JSON", status:res.status }; }
+  log("POST response", json);
+  showDiag({ POST:url, response:json });
   return json;
 }
-
 async function getJSON(url) {
+  log("GET", url);
   const res = await fetch(url);
-  return res.json();
+  let json = null;
+  try { json = await res.json(); } catch { json = { ok:false, error:"Réponse non-JSON", status:res.status }; }
+  log("GET response", json);
+  showDiag({ GET:url, response:json });
+  return json;
 }
 
 function toast(msg) {
@@ -100,6 +111,16 @@ async function uploadToCloudinary(file) {
 
   const url = `https://api.cloudinary.com/v1_1/${CONFIG.CLOUDINARY_CLOUD_NAME}/image/upload`;
   const res = await fetch(url, { method: "POST", body: form });
+let data = {};
+try { data = await res.json(); } catch(e) { data = { error:"Cloudinary non-JSON", status:res.status }; }
+showDiag({ Cloudinary:data });
+if (!data.secure_url) {
+  console.error("Cloudinary error:", data);
+  throw new Error("Upload Cloudinary échoué: " + (data.error?.message || data.error || data.message || res.status));
+}
+return data.secure_url;
+
+  
   const data = await res.json();
   if (!data.secure_url) {
     console.error("Cloudinary error:", data);
@@ -120,38 +141,35 @@ async function handleAddCakeSubmit(e) {
   }
 
   try {
-    // 1) Upload Cloudinary → URL
-    const photoUrl = await uploadToCloudinary(file);
+  // 1) Upload
+  showDiag("== Début upload Cloudinary ==");
+  const photoUrl = await uploadToCloudinary(file);
+  showDiag("URL photo: " + photoUrl);
 
-    // 2) createCake → Apps Script
-    const res = await postJSON(`${CONFIG.API_URL}?action=createCake`, {
-      title,
-      photoUrl,
-      dateRealisation: dateReal,
-    });
-    if (!res.ok) throw new Error(res.error || "createCake a échoué");
-
-    // 3) Lien public feedback
-    const feedbackUrl = new URL(location.origin + location.pathname);
-    feedbackUrl.pathname = feedbackUrl.pathname.replace(/[^/]*$/, "") + "feedback.html";
-    feedbackUrl.search = "?" + toQuery({ cakeId: res.cakeId, t: Date.now() });
-
-    const a = $("#publicLink");
-    if (a) {
-      a.href = feedbackUrl.toString();
-      a.textContent = feedbackUrl.toString();
-      a.target = "_blank";
-      a.rel = "noopener";
-    }
-    toast("Gâteau créé. Lien prêt à partager !");
-    if (window.QRCode && $("#qr")) {
-      $("#qr").innerHTML = "";
-      new QRCode($("#qr"), { text: feedbackUrl.toString(), width: 160, height: 160 });
-    }
-  } catch (err) {
-    console.error(err);
-    toast("Erreur lors de la création du gâteau.");
+  // 2) createCake
+  showDiag("== Appel createCake ==");
+  const res = await postJSON(`${CONFIG.API_URL}?action=createCake`, {
+    title, photoUrl, dateRealisation: dateReal,
+  });
+  if (!res.ok) {
+    throw new Error("createCake a échoué: " + (res.error || "unknown"));
   }
+
+  // 3) Lien feedback
+  const feedbackUrl = new URL(location.origin + location.pathname);
+  feedbackUrl.pathname = feedbackUrl.pathname.replace(/[^/]*$/, "") + "feedback.html";
+  feedbackUrl.search = "?" + toQuery({ cakeId: res.cakeId, t: Date.now() });
+
+  const a = $("#publicLink");
+    if (a) { a.href = feedbackUrl.toString(); a.textContent = feedbackUrl.toString(); a.target="_blank"; a.rel="noopener"; }
+    toast("Gâteau créé. Lien prêt à partager !");
+    showDiag("OK: " + feedbackUrl.toString());
+    } catch (err) {
+  console.error(err);
+  showDiag("ERREUR: " + (err.message || err));
+  toast("Erreur lors de la création du gâteau.");
+  }
+
 }
 
 async function loadCakeHeader() {
