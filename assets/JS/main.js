@@ -79,7 +79,7 @@ function computeOverall10({ taste, texture, pairing, visuel }) {
    - #qr (optionnel si lib qrcodejs)
 */
 
-function loadImageFile(file) {
+async function loadImageFile(file) {
   return new Promise((resolve, reject) => {
     const img = new Image();
     img.onload = () => resolve(img);
@@ -93,17 +93,19 @@ async function compressImage(file, maxSide = CONFIG.MAX_IMG) {
   const ratio = Math.min(maxSide / img.width, maxSide / img.height, 1);
   const w = Math.round(img.width * ratio);
   const h = Math.round(img.height * ratio);
-
   const canvas = document.createElement("canvas");
-  canvas.width = w; canvas.height = h;
+  canvas.width = w;
+  canvas.height = h;
   const ctx = canvas.getContext("2d");
   ctx.drawImage(img, 0, 0, w, h);
-
   const blob = await new Promise((res) => canvas.toBlob(res, "image/jpeg", 0.85));
   return new File([blob], file.name.replace(/\.[^.]+$/, ".jpg"), { type: "image/jpeg" });
 }
 
 async function uploadToCloudinary(file) {
+  // debug utile : vérifie qu’on a bien les valeurs
+  console.log("[CLD] cloud:", CONFIG.CLOUDINARY_CLOUD_NAME, "preset:", CONFIG.CLOUDINARY_UPLOAD_PRESET);
+
   const compressed = await compressImage(file, CONFIG.MAX_IMG);
   const form = new FormData();
   form.append("file", compressed);
@@ -111,22 +113,20 @@ async function uploadToCloudinary(file) {
 
   const url = `https://api.cloudinary.com/v1_1/${CONFIG.CLOUDINARY_CLOUD_NAME}/image/upload`;
   const res = await fetch(url, { method: "POST", body: form });
-let data = {};
-try { data = await res.json(); } catch(e) { data = { error:"Cloudinary non-JSON", status:res.status }; }
-showDiag({ Cloudinary:data });
-if (!data.secure_url) {
-  console.error("Cloudinary error:", data);
-  throw new Error("Upload Cloudinary échoué: " + (data.error?.message || data.error || data.message || res.status));
-}
-return data.secure_url;
+  let data;
+  try {
+    data = await res.json();
+  } catch {
+    data = { error: "Réponse non-JSON", status: res.status };
+  }
+  console.log("[CLD] response:", data);
 
-  
-  const data = await res.json();
   if (!data.secure_url) {
+    // ne t’inquiète pas pour 'console.error' : c’est juste un warning du linter
     console.error("Cloudinary error:", data);
     throw new Error("Upload Cloudinary échoué");
   }
-  return data.secure_url; // URL publique
+  return data.secure_url;
 }
 
 async function handleAddCakeSubmit(e) {
