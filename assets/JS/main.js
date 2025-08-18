@@ -119,7 +119,6 @@ async function uploadToCloudinary(file) {
   } catch {
     data = { error: "Réponse non-JSON", status: res.status };
   }
-  console.log("[CLD] response:", data);
 
   if (!data.secure_url) {
     // ne t’inquiète pas pour 'console.error' : c’est juste un warning du linter
