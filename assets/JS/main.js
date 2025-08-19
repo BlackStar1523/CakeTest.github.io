@@ -103,30 +103,38 @@ async function compressImage(file, maxSide = CONFIG.MAX_IMG) {
 }
 
 async function uploadToCloudinary(file) {
-  // debug utile : vérifie qu’on a bien les valeurs
+  // debug : vérifie qu'on a bien les valeurs
   console.log("[CLD] cloud:", CONFIG.CLOUDINARY_CLOUD_NAME, "preset:", CONFIG.CLOUDINARY_UPLOAD_PRESET);
 
+  // 1) compression
   const compressed = await compressImage(file, CONFIG.MAX_IMG);
+
+  // 2) formulaire d'upload
   const form = new FormData();
   form.append("file", compressed);
   form.append("upload_preset", CONFIG.CLOUDINARY_UPLOAD_PRESET);
 
+  // 3) appel Cloudinary
   const url = `https://api.cloudinary.com/v1_1/${CONFIG.CLOUDINARY_CLOUD_NAME}/image/upload`;
   const res = await fetch(url, { method: "POST", body: form });
+
+  // 4) parse une seule fois (PAS de redeclaration)
   let data;
   try {
     data = await res.json();
   } catch {
-    data = { error: "Réponse non-JSON", status: res.status };
+    data = { error: "Cloudinary non-JSON", status: res.status };
+  }
+  console.log("[CLD] response:", data);
+  if (!data.secure_url) {
+    console.error("Cloudinary error:", data);
+    throw new Error("Upload Cloudinary échoué" + (data.error ? `: ${data.error.message || data.error}` : ""));
   }
 
-  if (!data.secure_url) {
-    // ne t’inquiète pas pour 'console.error' : c’est juste un warning du linter
-    console.error("Cloudinary error:", data);
-    throw new Error("Upload Cloudinary échoué");
-  }
+  // 5) URL publique
   return data.secure_url;
 }
+
 
 async function handleAddCakeSubmit(e) {
   e.preventDefault();
