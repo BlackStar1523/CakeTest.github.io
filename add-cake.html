@@ -1,40 +1,80 @@
-<link rel="stylesheet" href="assets/CSS/style.css">
-
-<hr>
-<details open>
-  <summary>Diagnostics</summary>
-  <pre id="diag" style="white-space:pre-wrap;background:#111;color:#0f0;padding:8px;border-radius:6px;overflow:auto;max-height:200px"></pre>
-</details>
-
-<script src="assets/JS/main.js"></script>
-
-<!doctype html>
+<!DOCTYPE html>
 <html lang="fr">
-<meta charset="utf-8">
-<meta name="viewport" content="width=device-width,initial-scale=1">
-<title>Ajouter un gâteau</title>
-<link rel="stylesheet" href="assets/CSS/style.css">
+<head>
+  <meta charset="UTF-8">
+  <title>Ajouter un gâteau</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <style>
+    body {
+      font-family: sans-serif;
+      max-width: 600px;
+      margin: 20px auto;
+      padding: 10px;
+    }
+    form label {
+      display: block;
+      margin: 10px 0;
+    }
+    #preview {
+      max-width: 200px;
+      display: block;
+      margin: 8px 0;
+      border: 1px solid #ccc;
+      padding: 4px;
+    }
+    button {
+      padding: 8px 16px;
+      margin-top: 10px;
+    }
+    #publicLink {
+      word-break: break-all;
+      display: inline-block;
+      margin-top: 8px;
+    }
+  </style>
+</head>
 <body>
- <form id="formAddCake">
-  <h1>Créer un gâteau</h1>
-  <label>Titre <input id="title" required></label><br>
-  <label>Date de réalisation <input id="dateReal" type="date" required></label><br>
+  <h1>Créer un nouveau gâteau</h1>
 
-  <!-- Photo: prise de vue mobile (camera arrière) OU fichier -->
-  <label>Photo
-    <input id="photo" type="file" accept="image/*" capture="environment" required>
-  </label><br>
-  <img id="preview" alt="" style="max-width:220px;display:block;margin:8px 0;">
+  <form id="formAddCake">
+    <label>
+      Titre :
+      <input id="title" required>
+    </label>
+    <label>
+      Date de réalisation :
+      <input id="dateReal" type="date" required>
+    </label>
+    <label>
+      Photo :
+      <input id="photo" type="file" accept="image/*" required>
+    </label>
+    <img id="preview" alt="Aperçu photo">
+    <button type="submit">Créer</button>
+  </form>
 
-  <button type="submit">Créer</button>
-</form>
+  <p>
+    Lien public : <a id="publicLink" target="_blank"></a>
+  </p>
 
-  <p>Lien public : <a id="publicLink" target="_blank" rel="noopener"></a></p>
-  <div id="qr"></div>
-  <!-- Optionnel : QR code 
-  <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
-  -->
+  <!-- ton JS principal -->
+  <script src="assets/JS/main.js?v=5" defer></script>
 
-  <script src="assets/JS/main.js" defer></script>
+  <!-- init spécifique pour cette page -->
+  <script>
+    document.addEventListener("DOMContentLoaded", () => {
+      const f = document.querySelector("#formAddCake");
+      if (f) f.addEventListener("submit", handleAddCakeSubmit);
+
+      const input = document.querySelector("#photo");
+      const prev = document.querySelector("#preview");
+      if (input && prev) {
+        input.addEventListener("change", () => {
+          const file = input.files?.[0];
+          if (file) prev.src = URL.createObjectURL(file);
+        });
+      }
+    });
+  </script>
 </body>
 </html>
