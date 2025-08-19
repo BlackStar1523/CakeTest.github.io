@@ -1,19 +1,17 @@
 /* ======= Cake Feedback – main.js (MVP) ======= */
 
 /* === 0) CONFIG === */
-/* === 0) CONFIG === */
 const CONFIG = {
-  API_URL: "https://script.google.com/macros/s/AKfycbw6qu6FrM57cTXG0yRiuWN4iuQ7km98h6QxKTy5-3hlPE952y371FVMwWxUc168nWf/exec",
+  API_URL:
+    "https://script.google.com/macros/s/AKfycbw6qu6FrM57cTXG0yRiuWN4iuQ7km98h6QxKTy5-3hlPE952y371FVMwWxUc168nWf/exec",
 
-  // Cloudinary
-  CLOUDINARY_CLOUD_NAME: "dk0ioppgv",   // ton vrai cloud name
-  CLOUDINARY_UPLOAD_PRESET: "Cake Test", // preset unsigned exact
+  // Cloudinary (ton compte)
+  CLOUDINARY_CLOUD_NAME: "dk0ioppgv",    // <-- ton cloud name exact
+  CLOUDINARY_UPLOAD_PRESET: "Cake Test",  // <-- preset Unsigned exact
 
-  // Photo temporaire (MVP sans upload)
-  SAMPLE_PHOTO_URL: "https://res.cloudinary.com/dk0ioppgv/image/upload/v1755266890/cld-sample-4.jpg",
-
-  MAX_IMG: 1600
+  MAX_IMG: 1600, // redim côté client
 };
+
 
 const DEBUG = true;
 const log = (...args) => { if (DEBUG) console.log("[CakeDiag]", ...args); };
@@ -40,17 +38,12 @@ function toQuery(params) {
 
 // POST en text/plain pour éviter le preflight CORS avec Apps Script
 async function postJSON(url, data) {
-  log("POST", url, data);
   const res = await fetch(url, {
     method: "POST",
     headers: { "Content-Type": "text/plain;charset=utf-8" },
     body: JSON.stringify(data),
   });
-  let json = null;
-  try { json = await res.json(); } catch { json = { ok:false, error:"Réponse non-JSON", status:res.status }; }
-  log("POST response", json);
-  showDiag({ POST:url, response:json });
-  return json;
+  return res.json();
 }
 async function getJSON(url) {
   log("GET", url);
@@ -108,91 +101,63 @@ async function compressImage(file, maxSide = CONFIG.MAX_IMG) {
   const w = Math.round(img.width * ratio);
   const h = Math.round(img.height * ratio);
   const canvas = document.createElement("canvas");
-  canvas.width = w;
-  canvas.height = h;
-  const ctx = canvas.getContext("2d");
-  ctx.drawImage(img, 0, 0, w, h);
+  canvas.width = w; canvas.height = h;
+  canvas.getContext("2d").drawImage(img, 0, 0, w, h);
   const blob = await new Promise((res) => canvas.toBlob(res, "image/jpeg", 0.85));
   return new File([blob], file.name.replace(/\.[^.]+$/, ".jpg"), { type: "image/jpeg" });
 }
 
 async function uploadToCloudinary(file) {
-  // debug : vérifie qu'on a bien les valeurs
-  console.log("[CLD] cloud:", CONFIG.CLOUDINARY_CLOUD_NAME, "preset:", CONFIG.CLOUDINARY_UPLOAD_PRESET);
-
-  // 1) compression
   const compressed = await compressImage(file, CONFIG.MAX_IMG);
-
-  // 2) formulaire d'upload
   const form = new FormData();
   form.append("file", compressed);
   form.append("upload_preset", CONFIG.CLOUDINARY_UPLOAD_PRESET);
 
-  // 3) appel Cloudinary
   const url = `https://api.cloudinary.com/v1_1/${CONFIG.CLOUDINARY_CLOUD_NAME}/image/upload`;
   const res = await fetch(url, { method: "POST", body: form });
-
-  // 4) parse une seule fois (PAS de redeclaration)
   let data;
-  try {
-    data = await res.json();
-  } catch {
-    data = { error: "Cloudinary non-JSON", status: res.status };
-  }
-  console.log("[CLD] response:", data);
+  try { data = await res.json(); } catch { data = { error: "Cloudinary non-JSON", status: res.status }; }
   if (!data.secure_url) {
     console.error("Cloudinary error:", data);
-    throw new Error("Upload Cloudinary échoué" + (data.error ? `: ${data.error.message || data.error}` : ""));
+    throw new Error("Upload Cloudinary échoué");
   }
-
-  // 5) URL publique
   return data.secure_url;
 }
 
 
 async function handleAddCakeSubmit(e) {
   e.preventDefault();
-  const title = $("#title").value.trim();
-  const dateReal = $("#dateReal").value;
-  const file = $("#photo")?.files?.[0];
-
-  if (!title || !dateReal || !file) {
-    toast("Titre, date et photo sont obligatoires.");
-    return;
-  }
+  const title = document.querySelector("#title").value.trim();
+  const dateReal = document.querySelector("#dateReal").value;
+  const file = document.querySelector("#photo").files[0];
+  if (!title || !dateReal || !file) { alert("Titre, date, photo requis."); return; }
 
   try {
-  // 1) Upload
-  showDiag("== Début upload Cloudinary ==");
-  const photoUrl = await uploadToCloudinary(file);
-  showDiag("URL photo: " + photoUrl);
+    // 1) Upload photo → URL
+    const photoUrl = await uploadToCloudinary(file);
 
-  // 2) createCake
-  showDiag("== Appel createCake ==");
-  const res = await postJSON(`${CONFIG.API_URL}?action=createCake`, {
-    title, photoUrl, dateRealisation: dateReal,
-  });
-  if (!res.ok) {
-    throw new Error("createCake a échoué: " + (res.error || "unknown"));
+    // 2) createCake (Apps Script)
+    const res = await postJSON(`${CONFIG.API_URL}?action=createCake`, {
+      title,
+      photoUrl,
+      dateRealisation: dateReal,
+    });
+    if (!res.ok) throw new Error(res.error || "createCake a échoué");
+
+    // 3) Lien public feedback
+    const feedbackUrl = new URL(location.origin + location.pathname);
+    feedbackUrl.pathname = feedbackUrl.pathname.replace(/[^/]*$/, "") + "feedback.html";
+    feedbackUrl.search = "?cakeId=" + encodeURIComponent(res.cakeId);
+
+    const a = document.querySelector("#publicLink");
+    if (a) { a.href = feedbackUrl.toString(); a.textContent = feedbackUrl.toString(); a.target = "_blank"; }
+
+    alert("Gâteau créé. Lien prêt à partager !");
+  } catch (err) {
+    console.error(err);
+    alert("Erreur lors de la création du gâteau.");
   }
-
-  // 3) Lien feedback
-  const feedbackUrl = new URL(location.origin + location.pathname);
-  feedbackUrl.pathname = feedbackUrl.pathname.replace(/[^/]*$/, "") + "feedback.html";
-  feedbackUrl.search = "?" + toQuery({ cakeId: res.cakeId, t: Date.now() });
-
-  const a = $("#publicLink");
-    if (a) { a.href = feedbackUrl.toString(); a.textContent = feedbackUrl.toString(); a.target="_blank"; a.rel="noopener"; }
-    toast("Gâteau créé. Lien prêt à partager !");
-    showDiag("OK: " + feedbackUrl.toString());
-    } catch (err) {
-  console.error(err);
-  showDiag("ERREUR: " + (err.message || err));
-  toast("Erreur lors de la création du gâteau.");
-  }
-
 }
-
 async function loadCakeHeader() {
   const cakeId = $("#cakeId")?.value || getCakeIdFromURL();
   if (!cakeId) return;
