@@ -1,22 +1,36 @@
 /* ======= Cake Feedback – main.js (MVP) ======= */
 
 /* === 0) CONFIG === */
+/* === 0) CONFIG === */
 const CONFIG = {
-  API_URL:
-    "https://script.google.com/macros/s/AKfycbw6qu6FrM57cTXG0OyRiuWN4iuQ7km98h6QxKTy5-3hlPE952y371FVMwWxUc168nWf/exec",
-  
-  // Photo temporaire, le temps de valider le flux (MVP sans upload)
-  SAMPLE_PHOTO_URL:
-    "https://res.cloudinary.com/dk0ioppgv/image/upload/v1755266890/cld-sample-4.jpg",
+  API_URL: "https://script.google.com/macros/s/AKfycbw6qu6FrM57cTXG0yRiuWN4iuQ7km98h6QxKTy5-3hlPE952y371FVMwWxUc168nWf/exec",
+
+  // Cloudinary
+  CLOUDINARY_CLOUD_NAME: "dk0ioppgv",   // ton vrai cloud name
+  CLOUDINARY_UPLOAD_PRESET: "Cake Test", // preset unsigned exact
+
+  // Photo temporaire (MVP sans upload)
+  SAMPLE_PHOTO_URL: "https://res.cloudinary.com/dk0ioppgv/image/upload/v1755266890/cld-sample-4.jpg",
+
+  MAX_IMG: 1600
 };
+
+const DEBUG = true;
+const log = (...args) => { if (DEBUG) console.log("[CakeDiag]", ...args); };
+const showDiag = (o) => {
+  const el = document.getElementById("diag");
+  if (el) el.textContent += (typeof o === 'string' ? o : JSON.stringify(o, null, 2)) + "\n";
+};
+
+/* === 1) HELPERS === */
+const $ = (sel, root = document) => root.querySelector(sel);
+
 const DEBUG = true;
 const log = (...args) => { if (DEBUG) console.log("[CakeDiag]", ...args); };
 const showDiag = (o) => { const el = document.getElementById("diag"); if (el) el.textContent += (typeof o==='string'?o:JSON.stringify(o,null,2)) + "\n"; };
 
 /* === 1) HELPERS === */
 const $ = (sel, root = document) => root.querySelector(sel);
-const CLOUD_NAME = "dk0ioppgv";   // <- ton cloud name
-const UPLOAD_PRESET = "Cake Test"; // <- le preset que tu as créé
 
 
 function toQuery(params) {
