@@ -2,15 +2,12 @@
 
 /* === 0) CONFIG === */
 const CONFIG = {
-  API_URL:
-    "https://script.google.com/macros/s/AKfycbw6qu6FrM57cTXG0yRiuWN4iuQ7km98h6QxKTy5-3hlPE952y371FVMwWxUc168nWf/exec",
-
-  // Cloudinary (upload "Unsigned")
-  CLOUDINARY_CLOUD_NAME: "dk0ioppgv",    // <- ton cloud name exact
-  CLOUDINARY_UPLOAD_PRESET: "Cake Test",  // <- nom EXACT du preset Unsigned
-
-  MAX_IMG: 1600, // redimension côté client
+  API_URL: "https://script.google.com/macros/s/AKfycbw6qu6FrM57cTXG0yRiuWN4iuQ7km98h6QxKTy5-3hlPE952y371FVMwWxUc168nWf/exec",
+  CLOUDINARY_CLOUD_NAME: "dk0ioppgv",
+  CLOUDINARY_UPLOAD_PRESET: "Cake_Test",   // <-- le preset qui a marché en console
+  MAX_IMG: 1600,
 };
+
 
 /* === 1) HELPERS GÉNÉRAUX + DIAGNOSTIC === */
 const DEBUG = true;
