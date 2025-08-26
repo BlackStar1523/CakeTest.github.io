@@ -2,39 +2,29 @@
 
 /* === 1) HELPERS GÉNÉRAUX + DIAGNOSTIC === */
 
-// On lit la config injectée par assets/JS/config.js
-const CONFIG = Object.freeze({ ...DEFAULTS, ...(window.CONFIG || {}) });
+/* ======= Cake Feedback – main.js (Propre + Diagnostics) ======= */
 
-// DEBUG est dérivé de ENV (pas stocké dans config.js)
-const DEBUG = (CONFIG.ENV === "TEST");
-const $ = (sel, root = document) => root.querySelector(sel);
-const now = () => new Date().toISOString().split("T")[1].replace("Z", "");
+/* === 0) CONFIG + ENV/DEBUG === */
+if (!window.CONFIG) {
+  console.error("config.js introuvable ou chargé après main.js");
+  window.CONFIG = {}; // évite un crash dur si l'ordre est mauvais
+}
+const CONFIG = Object.freeze({ ...(window.CONFIG) });
+const DEBUG  = (CONFIG.ENV === "TEST");
+
+/* === 1) HELPERS GÉNÉRAUX + DIAGNOSTIC === */
+const $      = (sel, root = document) => root.querySelector(sel);
+const now    = () => new Date().toISOString().split("T")[1].replace("Z", "");
 const diagEl = () => document.getElementById("diag");
 
-
 function diag(step, data) {
-  // Ne rien faire si on est en PROD
-  if (!DEBUG) return;
-
-  // Ligne de log
-  const time = new Date().toLocaleTimeString();
-  const line = `[${time}] ${step} ${data ? JSON.stringify(data, null, 2) : ""}`;
-
-  // Si un <pre id="diag"> existe (injecté par diagnostics.js), on écrit dedans
-  const el = document.getElementById("diag");
+  if (!DEBUG) return; // rien en PROD
+  const line = `[${now()}] ${step} ${data ? JSON.stringify(data, null, 2) : ""}`;
+  const el = diagEl();
   if (el) el.textContent += line + "\n";
-
-  // Toujours log dans la console aussi
   console.log("[DIAG]", step, data ?? "");
 }
 
-
-function diag(step, data) {
-  const el = diagEl();
-  const line = `[${now()}] ${step} ${data ? JSON.stringify(data, null, 2) : ""}`;
-  if (el) el.textContent += line + "\n";
-  if (DEBUG) console.log("[DIAG]", step, data ?? "");
-}
 function toast(msg) { alert(msg); }
 function fail(code, msg, extra = {}) {
   const err = new Error(msg || code); err.code = code; Object.assign(err, extra); return err;
