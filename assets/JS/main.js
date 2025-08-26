@@ -1,4 +1,3 @@
-/* ======= Cake Feedback – main.js (Propre + Diagnostics) ======= */
 
 /* === 1) HELPERS GÉNÉRAUX + DIAGNOSTIC === */
 
