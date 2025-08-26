@@ -1,19 +1,34 @@
 /* ======= Cake Feedback – main.js (Propre + Diagnostics) ======= */
 
-/* === 0) CONFIG === */
-const CONFIG = {
-  API_URL: "https://script.google.com/macros/s/AKfycbysuhc2mWZNn2utxwF6InS7YLFU76JSkVkfOih-eesQE5jbuqM5Zrh4ImNX6kTVeMoA/exec",
-  CLOUDINARY_CLOUD_NAME: "dk0ioppgv",
-  CLOUDINARY_UPLOAD_PRESET: "Cake_Test",   // <-- le preset qui a marché en console
-  MAX_IMG: 1600,
-};
-
-
 /* === 1) HELPERS GÉNÉRAUX + DIAGNOSTIC === */
-const DEBUG = true;
+
+// On lit la config injectée par assets/JS/config.js
+const CONFIG = Object.freeze({ ...DEFAULTS, ...(window.CONFIG || {}) });
+
+// DEBUG est dérivé de ENV (pas stocké dans config.js)
+const DEBUG = (CONFIG.ENV === "TEST");
 const $ = (sel, root = document) => root.querySelector(sel);
 const now = () => new Date().toISOString().split("T")[1].replace("Z", "");
 const diagEl = () => document.getElementById("diag");
+
+
+function diag(step, data) {
+  // Ne rien faire si on est en PROD
+  if (!DEBUG) return;
+
+  // Ligne de log
+  const time = new Date().toLocaleTimeString();
+  const line = `[${time}] ${step} ${data ? JSON.stringify(data, null, 2) : ""}`;
+
+  // Si un <pre id="diag"> existe (injecté par diagnostics.js), on écrit dedans
+  const el = document.getElementById("diag");
+  if (el) el.textContent += line + "\n";
+
+  // Toujours log dans la console aussi
+  console.log("[DIAG]", step, data ?? "");
+}
+
+
 function diag(step, data) {
   const el = diagEl();
   const line = `[${now()}] ${step} ${data ? JSON.stringify(data, null, 2) : ""}`;
