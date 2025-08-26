@@ -1,5 +1,5 @@
 /* ======= Cake Feedback – main.js (Propre + Diagnostics) ======= */
-
+/* Test
 /* === 0) CONFIG + ENV/DEBUG === */
 if (!window.CONFIG) {
   console.error("config.js introuvable ou chargé après main.js");
