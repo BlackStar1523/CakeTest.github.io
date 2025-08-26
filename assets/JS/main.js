@@ -1,6 +1,3 @@
-
-/* === 1) HELPERS GÉNÉRAUX + DIAGNOSTIC === */
-
 /* ======= Cake Feedback – main.js (Propre + Diagnostics) ======= */
 
 /* === 0) CONFIG + ENV/DEBUG === */
