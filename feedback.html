@@ -1,13 +1,15 @@
 <!doctype html>
 <html lang="fr">
-<meta charset="utf-8">
-<meta name="viewport" content="width=device-width,initial-scale=1">
-<title>Feedback gâteau</title>
-<link rel="stylesheet" href="assets/CSS/style.css">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <title>Feedback gâteau</title>
+  <link rel="stylesheet" href="assets/CSS/style.css">
+</head>
 <body>
   <form id="formFeedback">
     <h1 id="cakeTitle">Gâteau</h1>
-    <img id="cakePhoto" alt="" style="max-width:100%;height:auto;border-radius:8px;margin:8px 0;">
+    <img id="cakePhoto" alt="" style="max-width:100%;height:auto;border-radius:8px;margin:8px 0;display:none;">
 
     <h1>Donner son avis</h1>
 
@@ -17,37 +19,66 @@
     <label for="taster">Prénom (optionnel)</label>
     <input id="taster" placeholder="Ex : Marie">
 
-    <label for="taste">Goût (/10)</label>
-    <input id="taste" type="number" min="0" max="10" step="0.5" required inputmode="decimal">
+    <!-- Goût -->
+    <label for="gout">Goût (/10)</label>
+    <input id="gout" type="number" min="0" max="10" step="1" required inputmode="numeric">
+    <small style="display:block;color:#666;margin-top:4px">Saveur agréable ? Bien dosé en sucre et en arômes ?</small>
 
-    <label for="texture">Texture (/10)</label>
-    <input id="texture" type="number" min="0" max="10" step="0.5" required inputmode="decimal">
+    <!-- Texture -->
+    <label for="texture" style="margin-top:12px">Texture (/10)</label>
+    <input id="texture" type="number" min="0" max="10" step="1" required inputmode="numeric">
+    <small style="display:block;color:#666;margin-top:4px">Moelleux, fondant, sec ou trop lourd ?</small>
 
-    <label for="pairing">Garniture (/10)</label>
-    <input id="pairing" type="number" min="0" max="10" step="0.5" required inputmode="decimal">
+    <!-- Garniture / Accord -->
+    <label for="garniture_accord" style="margin-top:12px">Garniture / Accord gâteau (/10)</label>
+    <input id="garniture_accord" type="number" min="0" max="10" step="1" required inputmode="numeric">
+    <small style="display:block;color:#666;margin-top:4px">La crème, les fruits, le chocolat s’équilibrent-ils bien avec le gâteau ?</small>
 
-    <label for="visuel">Visuel (/10)</label>
-    <input id="visuel" type="number" min="0" max="10" step="0.5" required inputmode="decimal">
+    <!-- Visuel -->
+    <label for="visuel" style="margin-top:12px">Visuel (/10)</label>
+    <input id="visuel" type="number" min="0" max="10" step="1" required inputmode="numeric">
+    <small style="display:block;color:#666;margin-top:4px">Est-ce que ça donne envie ? Présentation soignée ?</small>
 
-    <label for="overall">Globale (/10, Calculée)</label>
-    <input id="overall" type="number" min="0" max="10" step="0.5" readonly disabled>
+    <!-- Impression générale -->
+    <label for="impression" style="margin-top:12px">Impression générale (/10)</label>
+    <input id="impression" type="number" min="0" max="10" step="1" required inputmode="numeric">
+    <small style="display:block;color:#666;margin-top:4px">Ton ressenti global (envie d’en reprendre ?)</small>
 
-    <fieldset>
-      <legend>Observations</legend>
-      <label><input type="checkbox" name="flag" value="trop_sucre"> Trop sucré</label>
-      <label><input type="checkbox" name="flag" value="trop_sec"> Trop sec</label>
-      <label><input type="checkbox" name="flag" value="trop_dense"> Trop dense</label>
+    <!-- Note Globale calculée (coeff) -->
+    <label for="overall" style="margin-top:12px">Note globale (/10, calculée)</label>
+    <input id="overall" type="number" min="0" max="10" step="1" readonly disabled>
+
+    <!-- Flags impression générale (choix unique) -->
+    <fieldset style="margin-top:12px">
+      <legend>Impression générale — sélectionne une option</legend>
+      <label><input type="radio" name="flag_ig" value="Je n’en reprendrai pas"> Je n’en reprendrai pas</label>
+      <label><input type="radio" name="flag_ig" value="Mitigé (bof)"> Mitigé (bof)</label>
+      <label><input type="radio" name="flag_ig" value="Correct, sans plus"> Correct, sans plus</label>
+      <label><input type="radio" name="flag_ig" value="Bon, j’en reprendrais"> Bon, j’en reprendrais</label>
+      <label><input type="radio" name="flag_ig" value="Coup de cœur !"> Coup de cœur !</label>
     </fieldset>
 
-    <label for="comments">Commentaire</label>
+    <!-- Observations générales (facultatif) -->
+    <fieldset style="margin-top:12px">
+      <legend>Observations (facultatif)</legend>
+      <label><input type="checkbox" name="flag" value="trop_sucre"> Trop sucré</label>
+      <label><input type="checkbox" name="flag" value="pas_assez_sucre"> Pas assez sucré</label>
+      <label><input type="checkbox" name="flag" value="trop_fade"> Trop fade</label>
+      <label><input type="checkbox" name="flag" value="trop_sec"> Trop sec</label>
+      <label><input type="checkbox" name="flag" value="trop_dense"> Trop dense</label>
+      <label><input type="checkbox" name="flag" value="trop_humide"> Trop humide</label>
+      <label><input type="checkbox" name="flag" value="decor_a_revoir"> Décor à revoir</label>
+    </fieldset>
+
+    <label for="comments" style="margin-top:12px">Commentaire</label>
     <textarea id="comments" placeholder="Optionnel"></textarea>
 
     <button type="submit">Envoyer</button>
   </form>
 
+  <!-- JS -->
   <script src="assets/JS/config.js"></script>
-<script src="assets/JS/diagnostics.js"></script> <!-- optionnel ; s’active seulement si ENV === "TEST" -->
-<script src="assets/JS/main.js"></script>
-
+  <script src="assets/JS/diagnostics.js"></script> <!-- optionnel ; actif si ENV === "TEST" -->
+  <script src="assets/JS/main.js"></script>
 </body>
 </html>
