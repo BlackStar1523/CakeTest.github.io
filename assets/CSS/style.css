@@ -1,210 +1,151 @@
-/* ================== Cake Feedback – style pastel centré ================== */
-/* Palette douce (tu peux ajuster) */
+/* ================== Cake Feedback – style pastel centré (v2) ================== */
 :root{
-  --bg-1: #ffeaf2;         /* rose très pâle */
-  --bg-2: #fff7e6;         /* crème */
-  --ink: #2e2e2e;          /* texte */
-  --muted: #6b7280;        /* texte secondaire */
-  --card: #ffffff;         /* cartes */
-  --primary: #ff69b4;      /* rose dragée */
+  --bg-1:#ffeaf2;
+  --bg-2:#fff7e6;
+  --ink:#2e2e2e;
+  --muted:#6b7280;
+  --card:#fff;
+  --primary:#ff69b4;
   --primary-600:#ff4da3;
-  --accent: #ffcd4e;       /* jaune macaron */
-  --accent-2:#8ad4ff;      /* bleu ciel */
-  --success:#22c55e;
-  --danger:#ef4444;
-
-  --radius: 14px;
-  --shadow: 0 10px 25px rgba(0,0,0,.07);
-  --shadow-soft: 0 6px 14px rgba(0,0,0,.06);
-  --ring: 0 0 0 3px rgba(255,105,180,.25);
-  --maxw: 920px;           /* largeur max des cartes/formulaires */
+  --radius:14px;
+  --shadow:0 10px 25px rgba(0,0,0,.07);
+  --shadow-soft:0 6px 14px rgba(0,0,0,.06);
+  --ring:0 0 0 3px rgba(255,105,180,.25);
+  --maxw: 1000px;     /* largeur max globale */
+  --cardw: 920px;     /* largeur max des “cartes” (form, blocs, tableaux) */
 }
 
-/* --------- fond, typo, layout global --------- */
-html, body{
-  height:100%;
-}
+html, body{ height:100%; }
 body{
+  margin:0;
   font-family: system-ui, -apple-system, Segoe UI, Roboto, Arial, sans-serif;
-  color: var(--ink);
-  line-height: 1.6;
-  margin: 0;
-  /* fond pastel en dégradé */
+  color:var(--ink);
+  line-height:1.6;
+
+  /* fond pastel net mais léger */
   background:
-    radial-gradient(1200px 700px at -10% -10%, var(--bg-2), transparent 70%),
+    radial-gradient(1100px 600px at -10% -10%, var(--bg-2), transparent 70%),
     radial-gradient(900px 600px at 110% 0%,  #e0f4ff, transparent 65%),
     radial-gradient(700px 500px at 30% 120%, #ffe0ec, transparent 60%),
     var(--bg-1);
-  /* centrer la page comme une “carte” */
+
+  /* centrage global */
   display:flex;
   justify-content:center;
 }
-
-/* conteneur vertical : tout le contenu est centré et limité */
 body > *{
   width:100%;
   max-width: var(--maxw);
-  margin: 24px 18px;
+  margin: 22px 18px;
 }
 
 /* Titres */
 h1{
-  font-size: clamp(1.6rem, 2.5vw, 2rem);
-  line-height:1.2;
-  margin: 6px 0 14px;
-  color:#2c2c2c;
+  font-size: clamp(1.7rem, 2.4vw, 2.1rem);
+  margin: 8px auto 14px;
+  max-width: var(--cardw);
 }
 h2{
-  font-size: clamp(1.2rem, 2vw, 1.4rem);
-  margin: 22px 0 10px;
-  color:#3a3a3a;
+  font-size: clamp(1.2rem, 1.8vw, 1.4rem);
+  margin: 22px auto 10px;
+  max-width: var(--cardw);
 }
 
 /* Liens */
-a{ color: var(--primary-600); text-decoration: none; }
-a:hover{ text-decoration: underline; }
+a{ color: var(--primary-600); text-decoration:none; }
+a:hover{ text-decoration:underline; }
 
-/* ---------- “Cartes” : formulaires, blocs, tableaux ---------- */
-form,
-#shareBox,
-.card,
-table{
-  background: var(--card);
-  border-radius: var(--radius);
-  box-shadow: var(--shadow);
-  padding: 18px;
-  margin: 18px auto;
-}
-
-/* image d’aperçu */
-img{
-  border-radius: 12px;
-  box-shadow: var(--shadow-soft);
-}
-
-/* ---------- Formulaires ---------- */
-label{
-  display:block;
-  margin-top: 12px;
-  font-weight: 700;
-}
-
-input[type="text"],
-input[type="number"],
-input[type="date"],
-input[type="file"],
-textarea,
-select{
+/* -------- Cartes (form, shareBox, tableaux, blocs) -------- */
+form, #shareBox, table{
+  background:var(--card);
+  border-radius:var(--radius);
+  box-shadow:var(--shadow);
+  padding:18px;
+  margin:18px auto;
   width:100%;
-  box-sizing:border-box;
-  margin-top: 6px;
-  padding: 12px 12px;
-  border: 1px solid #e5e7eb;
-  border-radius: 10px;
-  font-size: 15px;
-  background:#fff;
-  transition: box-shadow .15s ease, border-color .15s ease, transform .02s ease;
+  max-width: var(--cardw);
+}
+img{ border-radius:12px; box-shadow:var(--shadow-soft); }
+
+/* .. le bandeau de filtres du dashboard (le 1er gros <div>) .. */
+body > div:first-of-type{
+  width:100%;
+  max-width: var(--cardw);
+  margin:12px auto 6px;
 }
 
-input:focus,
-textarea:focus,
-select:focus{
-  outline: none;
-  border-color: var(--primary);
-  box-shadow: var(--ring);
+/* -------- Formulaires -------- */
+label{ display:block; margin-top:12px; font-weight:700; }
+input[type="text"], input[type="number"], input[type="date"], input[type="file"],
+textarea, select{
+  width:100%; box-sizing:border-box;
+  margin-top:6px; padding:12px;
+  border:1px solid #e5e7eb; border-radius:10px; background:#fff; font-size:15px;
+  transition: box-shadow .15s ease, border-color .15s ease;
 }
-
-/* Texte d’aide sous les champs */
-small{
-  display:block;
-  color: var(--muted);
-  margin: 6px 2px 0;
-  font-size: 12.5px;
+input:focus, textarea:focus, select:focus{
+  outline:none; border-color:var(--primary); box-shadow:var(--ring);
 }
+small{ display:block; color:var(--muted); margin:6px 2px 0; font-size:12.5px; }
 
 /* Boutons */
 button{
-  display:inline-flex;
-  align-items:center;
-  justify-content:center;
-  gap:8px;
-  padding: 12px 16px;
-  margin-top: 16px;
-  border: none;
-  border-radius: 999px;
-  background: linear-gradient(135deg, var(--primary), var(--primary-600));
-  color: #fff;
-  font-weight: 700;
-  letter-spacing:.2px;
-  cursor: pointer;
-  box-shadow: 0 8px 18px rgba(255,105,180,.25);
+  display:inline-flex; align-items:center; justify-content:center; gap:8px;
+  padding:12px 16px; margin-top:16px;
+  border:none; border-radius:999px;
+  background:linear-gradient(135deg, var(--primary), var(--primary-600));
+  color:#fff; font-weight:700; letter-spacing:.2px; cursor:pointer;
+  box-shadow:0 8px 18px rgba(255,105,180,.25);
   transition: transform .06s ease, filter .15s ease;
 }
-button:hover{ filter: brightness(1.03); }
-button:active{ transform: translateY(1px); }
+button:hover{ filter:brightness(1.03); }
+button:active{ transform:translateY(1px); }
 
-/* Fieldsets (groupes de flags) */
+/* Fieldsets (flags) */
 fieldset{
-  border: 1px dashed #e5e7eb;
-  border-radius: 12px;
-  padding: 14px;
-  margin-top: 14px;
-  background: #fafafa;
+  border:1px dashed #e5e7eb; border-radius:12px;
+  padding:14px; margin-top:14px; background:#fafafa;
 }
-legend{
-  font-weight:700;
-  color:#444;
-  padding: 0 6px;
-}
-
-/* Radios/checkboxes en “pills” plus lisibles */
-input[type="checkbox"], input[type="radio"]{
-  accent-color: var(--primary);
-  transform: translateY(1px);
-  margin-right: 6px;
-}
+legend{ font-weight:700; color:#444; padding:0 6px; }
+input[type="checkbox"], input[type="radio"]{ accent-color:var(--primary); transform:translateY(1px); margin-right:6px; }
 fieldset label{
-  display:inline-flex;
-  align-items:center;
-  gap:6px;
-  padding:8px 10px;
-  margin:6px 6px 0 0;
-  background:#fff;
-  border:1px solid #ececec;
-  border-radius:999px;
-  box-shadow: var(--shadow-soft);
-  cursor:pointer;
-  user-select:none;
+  display:inline-flex; align-items:center; gap:6px;
+  padding:8px 10px; margin:6px 6px 0 0;
+  background:#fff; border:1px solid #ececec; border-radius:999px;
+  box-shadow:var(--shadow-soft); cursor:pointer; user-select:none;
 }
 
-/* ---------- Table (Dashboard) ---------- */
-table{
-  width:100%;
-  border-collapse: collapse;
-  overflow:hidden;
+/* -------- Stats liste (dashboard) -------- */
+ul{ padding-left:0; margin: 8px auto 16px; width:100%; max-width: var(--cardw); }
+ul li{
+  list-style:none;
+  display:flex; align-items:center; justify-content:space-between;
+  padding:8px 12px; margin:6px 0; background:#fff; border:1px solid #f1e6ef;
+  border-radius:10px; box-shadow: var(--shadow-soft);
 }
-th, td{
-  border-bottom: 1px solid #eee;
-  padding: 10px 8px;
-  text-align: center;
-  font-size: 14px;
+ul li span{ font-weight:700; }
+
+/* -------- Graphiques (cards visuelles) -------- */
+#chartAverages, #chartHistogram, #chartFlags{
+  display:block; width:100%; height:320px;   /* hauteur confortable desktop */
 }
-th{
-  background: linear-gradient(180deg, #fff, #fff7fb);
-  color:#3c3c3c;
-  font-weight:800;
+@media (max-width: 720px){
+  #chartAverages, #chartHistogram, #chartFlags{ height:240px; }
 }
+
+/* -------- Table (dashboard) -------- */
+table{ border-collapse:collapse; overflow:hidden; }
+th, td{ border-bottom:1px solid #eee; padding:10px 8px; text-align:center; font-size:14px; }
+th{ background:linear-gradient(180deg, #fff, #fff7fb); color:#3c3c3c; font-weight:800; }
 tbody tr:nth-child(even){ background:#fdf7fb; }
 tbody tr:hover{ background:#fff4fa; }
 
-/* Bloc “Lien public” (dash) */
-#shareBox strong{ color:#3a3a3a; }
+/* Bloc Lien public */
 #publicLinkDash{ word-break: break-all; }
 
-/* ---------- Layout responsive ---------- */
+/* ---------------- Responsive ---------------- */
 @media (max-width: 720px){
-  body > *{ margin: 16px 12px; }
-  fieldset label{ display:block; width: fit-content; }
+  body > *{ margin:16px 12px; }
   th, td{ font-size:13px; }
+  fieldset label{ display:block; width:fit-content; }
   }
-  
