@@ -1,5 +1,5 @@
-/* ======= Cake Feedback – main.js (Propre + Diagnostics) ======= */
-/* Test
+/* ======= Cake Feedback – main.js (version propre, FR) ======= */
+
 /* === 0) CONFIG + ENV/DEBUG === */
 if (!window.CONFIG) {
   console.error("config.js introuvable ou chargé après main.js");
@@ -46,18 +46,36 @@ async function getJSON(url) {
   return json;
 }
 
-/* === 2) NOTES /10 AVEC DEMI-POINTS === */
-function normalizeDecimal(str){ return String(str).replace(",", "."); }
-function roundToHalf(n){ return Math.round(n * 2) / 2; }
-function parseNote10(value){
-  const n = parseFloat(normalizeDecimal(value));
+/* === 2) NOTES /10 (entiers) + CALCUL COEFFICIENTS === */
+// Parse entier 0–10 (tolère virgule/point)
+function parseNote10Entier(value){
+  const n = Number(String(value).replace(",", "."));
   if (!isFinite(n)) return NaN;
-  return roundToHalf(Math.min(10, Math.max(0, n)));
+  const clamped = Math.max(0, Math.min(10, n));
+  return Math.round(clamped);
 }
-function computeOverall10({ taste, texture, pairing, visuel }){
-  const vals = [taste, texture, pairing, visuel].filter((x)=>isFinite(x));
-  if (vals.length !== 4) return NaN;
-  return roundToHalf(vals.reduce((a,b)=>a+b,0)/4);
+
+// Coefficients (IG très dominante ≈50%)
+const COEFF = Object.freeze({
+  gout: 1,
+  texture: 1,
+  garniture_accord: 1,
+  visuel: 1,
+  impression_generale: 4,
+});
+const COEFF_DENOM = COEFF.gout + COEFF.texture + COEFF.garniture_accord + COEFF.visuel + COEFF.impression_generale;
+
+// Calcule la note globale pondérée (arrondie à l’entier)
+function computeOverallCoeff({ gout, texture, garniture_accord, visuel, impression_generale }){
+  const num =
+    (Number(gout)||0) +
+    (Number(texture)||0) +
+    (Number(garniture_accord)||0) +
+    (Number(visuel)||0) +
+    (Number(impression_generale)||0) * COEFF.impression_generale;
+  const den = COEFF_DENOM || 1;
+  const val = num / den;
+  return Math.round(Math.max(0, Math.min(10, val)));
 }
 
 /* === 3) UPLOAD PHOTO (Cloudinary unsigned) === */
@@ -81,12 +99,11 @@ async function compressImage(file, maxSide = CONFIG.MAX_IMG){
 }
 
 async function uploadToCloudinary(file){
-  // 0) vérif config
   if (!CONFIG.CLOUDINARY_CLOUD_NAME) throw fail("CONFIG_MISSING", "Cloud name manquant");
   if (!CONFIG.CLOUDINARY_UPLOAD_PRESET) throw fail("CONFIG_MISSING", "Upload preset manquant");
   diag("CLD:START", { file: file?.name, size: file?.size });
 
-  // 1) compression
+  // compression
   let compressed;
   try {
     compressed = await compressImage(file, CONFIG.MAX_IMG);
@@ -96,7 +113,7 @@ async function uploadToCloudinary(file){
     throw fail("COMPRESS_FAIL", "Échec compression image", { original:e });
   }
 
-  // 2) form + fetch (timeout)
+  // upload
   const form = new FormData();
   form.append("file", compressed);
   form.append("upload_preset", CONFIG.CLOUDINARY_UPLOAD_PRESET);
@@ -142,17 +159,14 @@ async function handleAddCakeSubmit(e){
   try {
     diag("ADD_CAKE:BEGIN", { title, dateReal });
 
-    // 1) upload
     const photoUrl = await uploadToCloudinary(file);
 
-    // 2) enregistrement Apps Script
     const res = await postJSON(`${CONFIG.API_URL}?action=createCake`, {
       title, photoUrl, dateRealisation: dateReal
     });
     if (!res.ok) throw fail("APPS_SCRIPT_ERROR", res.error || "createCake a échoué");
     diag("ADD_CAKE:CREATED", res);
 
-    // 3) lien public feedback
     const feedbackUrl = new URL(location.origin + location.pathname);
     feedbackUrl.pathname = feedbackUrl.pathname.replace(/[^/]*$/, "") + "feedback.html";
     feedbackUrl.search = "?cakeId=" + encodeURIComponent(res.cakeId);
@@ -193,22 +207,28 @@ async function handleFeedbackSubmit(e){
   if (!cakeId){ toast("Lien invalide : cakeId manquant."); return; }
   const taster = $("#taster") ? $("#taster").value.trim() : "";
 
+  // Lecture des 5 notes (/10 entiers)
   const ratings = {
-    taste: parseNote10($("#taste").value),
-    texture: parseNote10($("#texture").value),
-    pairing: parseNote10($("#pairing").value),
-    visuel: parseNote10($("#visuel").value),
+    gout:               parseNote10Entier($("#gout")?.value),
+    texture:            parseNote10Entier($("#texture")?.value),
+    garniture_accord:   parseNote10Entier($("#garniture_accord")?.value),
+    visuel:             parseNote10Entier($("#visuel")?.value),
+    impression_generale:parseNote10Entier($("#impression")?.value), // id "impression" côté HTML
   };
+
   if (Object.values(ratings).some(v=>!isFinite(v))){
-    toast("Merci de saisir des notes valides (0 à 10, pas de 0,5).");
+    toast("Merci de saisir des notes valides (0 à 10, entiers).");
     return;
   }
 
-  const overall = computeOverall10(ratings);
-  if (!isFinite(overall)){ toast("Impossible de calculer la note globale."); return; }
-  if ($("#overall")) $("#overall").value = String(overall);
+  const overall = computeOverallCoeff(ratings);
+  const overallEl = $("#overall");
+  if (overallEl) overallEl.value = String(overall);
 
-  const flags = Array.from(document.querySelectorAll('input[name="flag"]:checked')).map(el=>el.value);
+  // Flags (y compris impression générale si tu as un groupe dédié, name="flag_ig")
+  const flags = Array.from(document.querySelectorAll('input[name="flag"]:checked, input[name="flag_ig"]:checked'))
+    .map(el=>el.value);
+
   const comments = $("#comments") ? $("#comments").value : "";
   const submittedAt = new Date().toISOString();
 
@@ -219,39 +239,47 @@ async function handleFeedbackSubmit(e){
     if (!res.ok) throw new Error(res.error || "addResponse a échoué");
 
     toast("Merci ! Votre avis a été enregistré.");
-    $("#formFeedback").reset(); if ($("#overall")) $("#overall").value = "";
+    $("#formFeedback").reset(); if (overallEl) overallEl.value = "";
   }catch(err){ console.error(err); toast("Erreur : envoi impossible."); }
 }
 
 function wireLiveOverall(){
-  const fields = ["#taste", "#texture", "#pairing", "#visuel"];
+  const fields = ["#gout", "#texture", "#garniture_accord", "#visuel", "#impression"];
   const recalc = () => {
     const ratings = {
-      taste: parseNote10($("#taste")?.value),
-      texture: parseNote10($("#texture")?.value),
-      pairing: parseNote10($("#pairing")?.value),
-      visuel: parseNote10($("#visuel")?.value),
+      gout:               parseNote10Entier($("#gout")?.value),
+      texture:            parseNote10Entier($("#texture")?.value),
+      garniture_accord:   parseNote10Entier($("#garniture_accord")?.value),
+      visuel:             parseNote10Entier($("#visuel")?.value),
+      impression_generale:parseNote10Entier($("#impression")?.value),
     };
-    const overall = computeOverall10(ratings);
-    if (isFinite(overall) && $("#overall")) $("#overall").value = String(overall);
+    const overall = computeOverallCoeff(ratings);
+    const overallEl = $("#overall");
+    if (isFinite(overall) && overallEl) overallEl.value = String(overall);
   };
   fields.forEach(sel => { const el = $(sel); if (el) ["input","change","blur"].forEach(ev=>el.addEventListener(ev, recalc)); });
 }
 
 /* === 6) TABLE, MOYENNES & GRAPHIQUES (dashboard) === */
-function moyenne(nums){ const arr = nums.filter(n=>Number.isFinite(n)); return arr.length? Math.round((arr.reduce((a,b)=>a+b,0)/arr.length)*100)/100 : 0; }
+function moyenne(nums){
+  const arr = nums.filter(n=>Number.isFinite(n));
+  return arr.length ? Math.round((arr.reduce((a,b)=>a+b,0)/arr.length)*100)/100 : 0;
+}
 function setText(id, value){ const el = $(id); if (el) el.textContent = String(value); }
+
 function renderResponsesTable(items){
   const tb = $("#responsesTbody"); if (!tb) return; tb.innerHTML = "";
   for (const it of (items||[])){
+    const r = it.ratings || {};
     const tr = document.createElement("tr");
     tr.innerHTML = `
       <td>${it.taster || ""}</td>
-      <td>${it.ratings.taste}</td>
-      <td>${it.ratings.texture}</td>
-      <td>${it.ratings.pairing}</td>
-      <td>${it.ratings.visuel}</td>
-      <td>${it.ratings.overall}</td>
+      <td>${r.gout ?? r.taste ?? ""}</td>
+      <td>${r.texture ?? ""}</td>
+      <td>${r.garniture_accord ?? r.pairing ?? ""}</td>
+      <td>${r.visuel ?? ""}</td>
+      <td>${r.impression_generale ?? ""}</td>
+      <td>${r.overall ?? ""}</td>
       <td>${(it.flags || []).join(", ")}</td>
       <td>${it.comments || ""}</td>
       <td>${it.submittedAt || ""}</td>`;
@@ -260,35 +288,63 @@ function renderResponsesTable(items){
 }
 
 let charts = { avg:null, hist:null, flags:null };
-function destroyCharts(){ Object.values(charts).forEach(ch => { if (ch && ch.destroy) ch.destroy(); }); charts = { avg:null, hist:null, flags:null }; }
+function destroyCharts(){
+  Object.values(charts).forEach(ch => { if (ch && ch.destroy) ch.destroy(); });
+  charts = { avg:null, hist:null, flags:null };
+}
+
 function buildCharts(items){
   if (!items || !items.length || !window.Chart){ destroyCharts(); return; }
-  const t = (k)=>items.map(it=>Number(it.ratings[k])||0);
-  const avgTaste = moyenne(t("taste")), avgTexture = moyenne(t("texture")), avgPairing = moyenne(t("pairing")), avgVisuel = moyenne(t("visuel")), avgOverall = moyenne(t("overall"));
+  const t = (k)=>items.map(it=>Number((it.ratings||{})[k])||0);
 
+  const avgGout    = moyenne(t("gout").map((v,i)=> v || Number((items[i].ratings||{}).taste) || 0));
+  const avgTexture = moyenne(t("texture"));
+  const avgAcc     = moyenne(t("garniture_accord").map((v,i)=> v || Number((items[i].ratings||{}).pairing) || 0));
+  const avgVisuel  = moyenne(t("visuel"));
+  const avgIG      = moyenne(t("impression_generale"));
+  const avgOverall = moyenne(t("overall"));
+
+  // Barres des moyennes par critère (+ IG) et la Globale séparée
   const ctxAvg = document.getElementById("chartAverages")?.getContext("2d");
-  if (ctxAvg){ charts.avg?.destroy?.(); charts.avg = new Chart(ctxAvg, {
+  if (ctxAvg){
+    charts.avg?.destroy?.();
+    charts.avg = new Chart(ctxAvg, {
       type:"bar",
-      data:{ labels:["Goût","Texture","Garniture","Visuel","Globale"], datasets:[{ label:"Moyenne /10", data:[avgTaste,avgTexture,avgPairing,avgVisuel,avgOverall] }] },
+      data:{
+        labels:["Goût","Texture","Garniture_Accord","Visuel","Impression_Générale","Globale"],
+        datasets:[{ label:"Moyenne /10", data:[avgGout,avgTexture,avgAcc,avgVisuel,avgIG,avgOverall] }]
+      },
       options:{ responsive:true, scales:{ y:{ beginAtZero:true, max:10 } } }
-  });}
+    });
+  }
 
-  const overalls = t("overall"), edges = Array.from({length:21}, (_,i)=>i*0.5), counts = edges.map(()=>0);
-  overalls.forEach(v=>{ if (Number.isFinite(v)){ const idx = Math.round(v*2); counts[idx] = (counts[idx]||0)+1; }});
+  // Histogramme des "Note Globale" ENTIERES (0..10)
+  const overalls = t("overall");
+  const edges = Array.from({length:11}, (_,i)=>i); // 0..10
+  const counts = edges.map(()=>0);
+  overalls.forEach(v=>{ if (Number.isFinite(v)){ const idx = Math.round(v); if (idx>=0 && idx<=10) counts[idx] = (counts[idx]||0)+1; }});
   const ctxHist = document.getElementById("chartHistogram")?.getContext("2d");
-  if (ctxHist){ charts.hist?.destroy?.(); charts.hist = new Chart(ctxHist,{
+  if (ctxHist){
+    charts.hist?.destroy?.();
+    charts.hist = new Chart(ctxHist,{
       type:"bar",
-      data:{ labels: edges.map(e=>e.toFixed(1)), datasets:[{ label:"Nombre de réponses", data:counts }]},
+      data:{ labels: edges.map(String), datasets:[{ label:"Nombre de réponses", data:counts }]},
       options:{ responsive:true, plugins:{ legend:{ display:false }}, scales:{ y:{ beginAtZero:true, ticks:{ precision:0 } } } }
-  });}
+    });
+  }
 
-  const flagCounts = {}; items.forEach(it => (it.flags||[]).forEach(f => { if (f) flagCounts[f]=(flagCounts[f]||0)+1; }));
+  // Flags (tous confondus)
+  const flagCounts = {};
+  items.forEach(it => (it.flags||[]).forEach(f => { if (f) flagCounts[f]=(flagCounts[f]||0)+1; }));
   const ctxFlags = document.getElementById("chartFlags")?.getContext("2d");
-  if (ctxFlags){ charts.flags?.destroy?.(); charts.flags = new Chart(ctxFlags,{
+  if (ctxFlags){
+    charts.flags?.destroy?.();
+    charts.flags = new Chart(ctxFlags,{
       type:"bar",
       data:{ labels:Object.keys(flagCounts), datasets:[{ label:"Occurrences", data:Object.values(flagCounts) }]},
       options:{ responsive:true, plugins:{ legend:{ display:false }}, scales:{ y:{ beginAtZero:true, ticks:{ precision:0 } } } }
-  });}
+    });
+  }
 }
 
 /* === 7) LISTE DES GÂTEAUX & PARTAGE (dashboard) === */
@@ -331,16 +387,31 @@ async function refreshCakeList(){
 async function loadDashboard(){
   const cakeId = $("#cakeSelect")?.value?.trim() || $("#cakeIdDash")?.value?.trim() || "";
   if (!cakeId){ toast("Choisis un gâteau dans la liste."); return; }
+
   const { ok, items, error } = await getJSON(`${CONFIG.API_URL}?action=listResponses&cakeId=${encodeURIComponent(cakeId)}`);
   if (!ok){ toast("Erreur chargement : " + (error || "inconnue")); return; }
+
   renderResponsesTable(items || []);
-  const t = (k)=>(items||[]).map(it=>Number(it.ratings[k])||0);
-  const avgTaste=moyenne(t("taste")), avgTexture=moyenne(t("texture")), avgPairing=moyenne(t("pairing")), avgVisuel=moyenne(t("visuel")), avgOverall=moyenne(t("overall"));
-  setText("#avgTaste", avgTaste); setText("#avgTexture", avgTexture); setText("#avgPairing", avgPairing); setText("#avgVisuel", avgVisuel);
-  setText("#avgGlobal", moyenne([avgTaste,avgTexture,avgPairing,avgVisuel,avgOverall]));
-  destroyCharts(); buildCharts(items);
+
+  const t = (k)=>(items||[]).map(it=>Number((it.ratings||{})[k])||0);
+  const avgGout    = moyenne(t("gout").map((v,i)=> v || Number((items[i].ratings||{}).taste) || 0));
+  const avgTexture = moyenne(t("texture"));
+  const avgAcc     = moyenne(t("garniture_accord").map((v,i)=> v || Number((items[i].ratings||{}).pairing) || 0));
+  const avgVisuel  = moyenne(t("visuel"));
+  const avgIG      = moyenne(t("impression_generale"));
+  const avgOverall = moyenne(t("overall"));
+
+  setText("#avgTaste",   avgGout);
+  setText("#avgTexture", avgTexture);
+  setText("#avgPairing", avgAcc);
+  setText("#avgVisuel",  avgVisuel);
+  setText("#avgGlobal",  avgOverall);
+
+  destroyCharts();
+  buildCharts(items);
   await showShareBox(cakeId);
 }
+
 function exportCSV(){
   const cakeId = $("#cakeSelect")?.value?.trim() || $("#cakeIdDash")?.value?.trim() || "";
   if (!cakeId){ toast("Choisis un gâteau d’abord."); return; }
@@ -373,5 +444,3 @@ document.addEventListener("DOMContentLoaded", () => {
     }
   }
 });
-
-
