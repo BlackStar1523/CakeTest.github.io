@@ -5,7 +5,7 @@
 <title>Dashboard gâteaux</title>
 <link rel="stylesheet" href="assets/CSS/style.css">
 <body>
-  <h1>Dashboard</h1> 
+  <h1>Dashboard</h1>
 
   <div style="display:flex; gap:8px; flex-wrap:wrap; align-items:flex-end;">
     <div>
@@ -51,12 +51,15 @@
   </div>
 
   <h2>Statistiques</h2>
-  <p>Moyenne globale: <strong id="avgGlobal">-</strong></p>
+  <p>Moyenne globale : <strong id="avgGlobal">-</strong></p>
   <ul>
-    <li>Goût: <span id="avgTaste">-</span></li>
-    <li>Texture: <span id="avgTexture">-</span></li>
-    <li>Garniture: <span id="avgPairing">-</span></li>
-    <li>Visuel: <span id="avgVisuel">-</span></li>
+    <li>Goût : <span id="avgTaste">-</span></li>
+    <li>Texture : <span id="avgTexture">-</span></li>
+    <li>Garniture / Accord : <span id="avgPairing">-</span></li>
+    <li>Visuel : <span id="avgVisuel">-</span></li>
+    <!-- Remarque : l’“Impression générale” est incluse dans les graphiques et le tableau.
+         Si tu veux aussi l’afficher ici, ajoute <li>Impression générale : <span id="avgIG">-</span></li>
+         et je mettrai à jour main.js pour le renseigner. -->
   </ul>
 
   <h2>Graphiques</h2>
@@ -86,8 +89,9 @@
         <th>Testeur</th>
         <th>Goût</th>
         <th>Texture</th>
-        <th>Garniture</th>
+        <th>Garniture / Accord</th>
         <th>Visuel</th>
+        <th>Impression générale</th>
         <th>Globale</th>
         <th>Observations</th>
         <th>Commentaire</th>
@@ -100,9 +104,8 @@
   <!-- Chart.js -->
   <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 
-<script src="assets/JS/config.js"></script>
-<script src="assets/JS/diagnostics.js"></script> <!-- optionnel ; s’active seulement si ENV === "TEST" -->
-<script src="assets/JS/main.js"></script>
-
+  <script src="assets/JS/config.js"></script>
+  <script src="assets/JS/diagnostics.js"></script> <!-- optionnel ; s’active seulement si ENV === "TEST" -->
+  <script src="assets/JS/main.js"></script>
 </body>
 </html>
