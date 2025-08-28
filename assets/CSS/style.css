@@ -1,138 +1,143 @@
-/* ================== Mise en page neutre, mobile-first, sans couleur ================== */
+/* ================== Cake Feedback – thème “pâtisserie light” (mobile-first) ================== */
+/* Palette douce + variables pour ajuster facilement */
+:root{
+  --bg: #fffdfb;            /* fond général très clair */
+  --ink: #222;              /* texte principal */
+  --ink-2: #5b5b5b;         /* texte secondaire */
+  --card: #ffffff;          /* cartes */
+  --line: #eaeaea;          /* bordures */
+  --muted: #f6f6f6;         /* légers aplats */
 
-/* Réglages globaux */
-* { box-sizing: border-box; }
-html, body { height: 100%; }
-body {
-  margin: 0;
-  padding: 12px;                 /* respiration sur mobile */
-  font-family: Arial, Helvetica, sans-serif;
-  line-height: 1.6;
-  color: #111;                   /* texte neutre sombre */
-  background: #fff;              /* fond neutre */
+  --primary: #ff5fa3;       /* rose framboise doux */
+  --primary-600:#ff3f92;    /* survol */
+  --ring: rgba(255,95,163,.25);
+
+  --radius: 12px;           /* arrondi des cartes/inputs */
+  --shadow: 0 8px 20px rgba(0,0,0,.06);
+  --shadow-soft: 0 4px 10px rgba(0,0,0,.05);
+
+  --w-page: 980px;          /* largeur max desktop */
+  --w-card: 880px;          /* largeur max des cartes */
 }
 
-/* Contenu centré et largeur limitée (pas plein écran sur PC) */
-body > * {
-  width: 100%;
-  max-width: 900px;              /* largeur max commune */
-  margin-left: auto;
-  margin-right: auto;
+/* ---------- base mobile-first ---------- */
+*{ box-sizing:border-box; }
+html, body{ height:100%; }
+body{
+  margin:0; padding:12px;
+  font-family: system-ui, -apple-system, Segoe UI, Roboto, Arial, sans-serif;
+  line-height:1.6; color:var(--ink); background: var(--bg);
+}
+/* centre le contenu et limite la largeur */
+body > *{
+  width:100%; max-width: var(--w-page);
+  margin-left:auto; margin-right:auto;
 }
 
-/* Titres & liens (neutres) */
-h1, h2 { margin: 8px 0 12px; font-weight: 700; }
-a { text-decoration: none; }
-a:hover { text-decoration: underline; }
+/* ---------- titres & liens ---------- */
+h1, h2{ margin:10px 0 14px; color:#333; }
+h1{ font-size: clamp(1.6rem, 2.4vw, 2.1rem); }
+h2{ font-size: clamp(1.2rem, 1.8vw, 1.4rem); color:#3b3b3b; }
 
-/* Navigation simple */
-nav ul { list-style: none; padding: 0; margin: 0; }
-nav li { margin: 8px 0; }
+a{ color: var(--primary-600); text-decoration:none; }
+a:hover{ text-decoration:underline; }
 
-/* Cartes (formulaires, blocs, tableaux) */
-form, #shareBox, table {
-  background: #fff;
-  border: 1px solid #e5e5e5;
-  border-radius: 8px;
-  padding: 16px;
-  margin: 16px 0;
-  box-shadow: 0 2px 6px rgba(0,0,0,.06);
+/* ---------- cartes (form, blocs, tableau) ---------- */
+form, #shareBox, table{
+  background:var(--card);
+  border:1px solid var(--line);
+  border-radius: var(--radius);
+  padding:18px;
+  margin:16px auto;
+  width:100%; max-width: var(--w-card);
+  box-shadow: var(--shadow);
+}
+img, canvas{ display:block; max-width:100%; height:auto; border-radius: 10px; box-shadow: var(--shadow-soft); }
+
+/* ---------- formulaires ---------- */
+label{
+  display:block;
+  margin-top:12px;
+  font-weight:700;
+  font-size:14px;
+}
+input[type="text"], input[type="number"], input[type="date"], input[type="file"],
+textarea, select, button{
+  width:100%;
+  margin-top:6px;
+  padding:12px 12px;
+  border:1px solid var(--line);
+  border-radius:10px;
+  font-size:16px; background:#fff;
+  transition: border-color .15s ease, box-shadow .15s ease, transform .02s ease;
+}
+textarea{ min-height:96px; resize:vertical; }
+input:focus, textarea:focus, select:focus{
+  outline:none; border-color: var(--primary);
+  box-shadow: 0 0 0 3px var(--ring);
+}
+/* texte d’aide éventuel */
+small{ display:block; color:var(--ink-2); margin:6px 2px 0; font-size:12.5px; }
+
+/* boutons pill */
+button{
+  background: linear-gradient(135deg, var(--primary), var(--primary-600));
+  color:#fff; font-weight:700; letter-spacing:.2px;
+  border:none; border-radius:999px; cursor:pointer;
+  box-shadow: 0 8px 18px rgba(255,95,163,.25);
+}
+button:hover{ filter:brightness(1.03); }
+button:active{ transform: translateY(1px); }
+
+/* ---------- fieldsets (flags) ---------- */
+fieldset{
+  border:1px solid var(--line);
+  border-radius:12px;
+  padding:12px;
+  margin-top:12px;
+  background: var(--muted);
+}
+legend{ font-weight:700; padding:0 6px; color:#444; }
+/* pastilles cliquables confort */
+fieldset label{
+  display:inline-flex; align-items:center; gap:8px;
+  padding:8px 10px; margin:6px 6px 0 0;
+  background:#fff; border:1px solid var(--line);
+  border-radius:999px; box-shadow: var(--shadow-soft);
+  user-select:none; cursor:pointer;
+}
+input[type="checkbox"], input[type="radio"]{ accent-color: var(--primary); transform: translateY(1px); }
+
+/* ---------- stats (la petite liste sous “Moyenne globale”) ---------- */
+ul{ padding:0; margin:8px auto 16px; width:100%; max-width: var(--w-card); }
+ul li{
+  list-style:none; display:flex; justify-content:space-between; align-items:center;
+  padding:8px 12px; margin-top:6px;
+  background:#fff; border:1px solid var(--line); border-radius:10px; box-shadow: var(--shadow-soft);
+}
+ul li span{ font-weight:700; }
+
+/* ---------- tableau (dashboard) ---------- */
+table{ border-collapse: collapse; overflow:hidden; }
+th, td{
+  border-bottom:1px solid #efefef;
+  padding:10px 8px; text-align:center; font-size:14px; color:#333;
+}
+th{
+  background: #fff7fb;          /* très discret */
+  font-weight:800; color:#3a3a3a;
+}
+tbody tr:nth-child(even){ background:#fdf9fb; }
+tbody tr:hover{ background:#fff2f8; }
+
+/* ---------- section filtres du dashboard (le 1er grand <div>) ---------- */
+body > div:first-of-type{
+  width:100%; max-width: var(--w-card);
+  margin:12px auto 6px;
 }
 
-/* Images & canvas responsives */
-img, canvas {
-  display: block;
-  max-width: 100%;
-  height: auto;
-  border-radius: 8px;
-}
-
-/* Formulaires */
-label {
-  display: block;
-  margin-top: 12px;
-  font-weight: 700;
-  font-size: 14px;
-}
-input[type="text"],
-input[type="number"],
-input[type="date"],
-input[type="file"],
-textarea,
-select,
-button {
-  width: 100%;
-  margin-top: 6px;
-  padding: 12px;
-  border: 1px solid #dcdcdc;
-  border-radius: 6px;
-  font-size: 16px;               /* lisible au doigt */
-  background: #fff;
-}
-textarea { min-height: 96px; resize: vertical; }
-
-/* Focus clair, accessible */
-input:focus, textarea:focus, select:focus {
-  outline: none;
-  border-color: #999;
-  box-shadow: 0 0 0 3px rgba(0,0,0,.08);
-}
-
-/* Boutons sobres */
-button {
-  cursor: pointer;
-  font-weight: 700;
-  background: #111;              /* neutre */
-  color: #fff;
-  border: none;
-}
-button:hover { filter: brightness(0.95); }
-
-/* Fieldsets / Flags */
-fieldset {
-  border: 1px solid #e5e5e5;
-  border-radius: 8px;
-  padding: 12px;
-  margin-top: 12px;
-  background: #fafafa;
-}
-legend { font-weight: 700; padding: 0 6px; }
-fieldset label {
-  display: block;
-  padding: 8px 10px;
-  margin-top: 6px;
-  border: 1px solid #eee;
-  border-radius: 6px;
-  background: #fff;
-}
-input[type="checkbox"], input[type="radio"] { margin-right: 6px; }
-
-/* Table (Dashboard) */
-table { width: 100%; border-collapse: collapse; overflow: hidden; }
-th, td {
-  border-bottom: 1px solid #eee;
-  padding: 10px 8px;
-  text-align: center;
-  font-size: 14px;
-}
-th { background: #f7f7f7; font-weight: 800; }
-tbody tr:nth-child(even) { background: #fbfbfb; }
-
-/* Statistiques (la petite liste sous “Moyenne globale”) */
-ul { padding: 0; margin: 8px 0 16px; }
-ul li {
-  list-style: none;
-  display: flex;
-  justify-content: space-between;
-  padding: 8px 10px;
-  border: 1px solid #eee;
-  border-radius: 6px;
-  background: #fff;
-  margin-top: 6px;
-}
-
-/* Responsive : un peu plus large et espacée sur desktop */
-@media (min-width: 900px) {
-  body { padding: 24px; }
-  body > * { max-width: 980px; }
+/* ---------- responsive desktop ---------- */
+@media (min-width: 900px){
+  body{ padding:24px; }
+  h1{ margin-top:6px; }
 }
