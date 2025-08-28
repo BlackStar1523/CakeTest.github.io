@@ -2,45 +2,19 @@
 <html lang="fr">
 <head>
   <meta charset="UTF-8">
-
-  <details open>
-  <summary>Diagnostics</summary>
-  <pre id="diag" style="white-space:pre-wrap;background:#111;color:#0f0;padding:8px;border-radius:6px;overflow:auto;max-height:220px"></pre>
-</details>
-
   <title>Ajouter un gâteau</title>
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <style>
-    body {
-      font-family: sans-serif;
-      max-width: 600px;
-      margin: 20px auto;
-      padding: 10px;
-    }
-    form label {
-      display: block;
-      margin: 10px 0;
-    }
-    #preview {
-      max-width: 200px;
-      display: block;
-      margin: 8px 0;
-      border: 1px solid #ccc;
-      padding: 4px;
-    }
-    button {
-      padding: 8px 16px;
-      margin-top: 10px;
-    }
-    #publicLink {
-      word-break: break-all;
-      display: inline-block;
-      margin-top: 8px;
-    }
-  </style>
+  <!-- CSS global -->
+  <link rel="stylesheet" href="assets/CSS/style.css">
 </head>
 <body>
   <h1>Créer un nouveau gâteau</h1>
+
+  <!-- Diagnostics (optionnel) -->
+  <details open style="margin:12px 0">
+    <summary>Diagnostics</summary>
+    <pre id="diag" style="white-space:pre-wrap;background:#111;color:#0f0;padding:8px;border-radius:6px;overflow:auto;max-height:220px"></pre>
+  </details>
 
   <form id="formAddCake">
     <label>
@@ -60,25 +34,22 @@
   </form>
 
   <p>
-    Lien public : <a id="publicLink" target="_blank"></a>
+    Lien public : <a id="publicLink" target="_blank" rel="noopener"></a>
   </p>
 
-  <!-- ton JS principal -->
+  <!-- JS -->
+  <script src="assets/JS/config.js"></script>
+  <script src="assets/JS/diagnostics.js"></script> <!-- optionnel ; s’active seulement si ENV === "TEST" -->
+  <script src="assets/JS/main.js"></script>
 
-<script src="assets/JS/config.js"></script>
-<script src="assets/JS/diagnostics.js"></script> <!-- optionnel ; s’active seulement si ENV === "TEST" -->
-<script src="assets/JS/main.js"></script>
-
-
-
-  <!-- init spécifique pour cette page -->
+  <!-- Init spécifique -->
   <script>
     document.addEventListener("DOMContentLoaded", () => {
       const f = document.querySelector("#formAddCake");
       if (f) f.addEventListener("submit", handleAddCakeSubmit);
 
       const input = document.querySelector("#photo");
-      const prev = document.querySelector("#preview");
+      const prev  = document.querySelector("#preview");
       if (input && prev) {
         input.addEventListener("change", () => {
           const file = input.files?.[0];
