@@ -78,6 +78,38 @@ function computeOverallCoeff({ gout, texture, garniture_accord, visuel, impressi
   return Math.round(Math.max(0, Math.min(10, val)));
 }
 
+// ===== Flags : collecte robuste =====
+
+// 1) toutes les cases cochées dont le name commence par "flag_" (sauf "flag" et "flag_ig")
+const critFlags = Array
+  .from(document.querySelectorAll('input[name^="flag_"]:checked'))
+  .filter(el => el.name !== 'flag' && el.name !== 'flag_ig')
+  .map(el => {
+    // prefixe lisible à partir du name: ex. flag_gout -> GOUT, flag_visuel -> VISUEL
+    const prefix = el.name.replace(/^flag_/, '').toUpperCase();
+    return `${prefix}:${el.value}`;
+  });
+
+// 2) impression générale (radio unique)
+const igChoice = document.querySelector('input[name="flag_ig"]:checked')?.value || "";
+
+// 3) observations générales (facultatif)
+const generalFlags = Array
+  .from(document.querySelectorAll('input[name="flag"]:checked'))
+  .map(el => el.value);
+
+// tableau final envoyé à Apps Script
+const flags = [
+  ...critFlags,
+  ...(igChoice ? [`IG:${igChoice}`] : []),
+  ...generalFlags
+];
+
+// (optionnel) log de diag pour vérifier le payload
+diag("SUBMIT:FLAGS", flags);
+// ====================================
+
+
 /* === 3) UPLOAD PHOTO (Cloudinary unsigned) === */
 async function loadImageFile(file){
   return new Promise((resolve, reject) => {
